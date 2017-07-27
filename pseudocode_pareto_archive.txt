@@ -1,0 +1,21 @@
+for each individual o in offspring population do:
+    if (o dominates an individual in parent population p) and (o is not dominated by any solutions in the archive) and (o is not similar to any solutions in the archive) then:
+        if archive is not full then:
+            add o to the archive
+        else if o dominates any solution a in the archive then:
+            replace a with o
+        else if any solution a1 in the archive dominates another solution a2 then:
+            replace a2 with o
+        else:
+            discard o
+        end if
+    else:
+        discard o
+    end if
+end for
+
+for each solution in the archive do:
+    if solution a1 dominates a2 then:
+        remove a2
+    end if
+end for
