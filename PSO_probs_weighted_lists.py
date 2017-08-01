@@ -1,10 +1,40 @@
 import numpy as np
-from matplotlib import pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
+from matplotlib import pyplot as plt, style
+# from mpl_toolkits.mplot3d import Axes3D
 from random import randint, random
 from copy import deepcopy
 from statistics import mode, mean, StatisticsError
 from functools import reduce
+from joblib import Parallel, delayed
+
+style.use('ggplot')
+
+
+def Memoize2(fn):
+    """returns a memoized version of any function that can be called
+    with the same list of arguments.
+    Usage: foo = memoize(foo)"""
+
+    def handle_item(x):
+        if isinstance(x, dict):
+            return make_tuple(sorted(x.items()))
+        elif hasattr(x, '__iter__'):
+            return make_tuple(x)
+        else:
+            return x
+
+    def make_tuple(L):
+        return tuple(handle_item(x) for x in L)
+
+    def foo(*args, **kwargs):
+        items_cache = make_tuple(sorted(kwargs.items()))
+        args_cache = make_tuple(args)
+        if (args_cache, items_cache) not in foo.past_calls:
+            foo.past_calls[(args_cache, items_cache)] = fn(*args, **kwargs)
+        return foo.past_calls[(args_cache, items_cache)]
+    foo.past_calls = {}
+    foo.__name__ = 'memoized_' + fn.__name__
+    return foo
 
 
 def function1(x):
@@ -19,12 +49,13 @@ def function3(x):
     return abs(np.average(x) - 2.5)
 
 
-def function4(x):
-    return - sum(x)
+def function_random(x):
+    return random() * 1000.0
+function_random = Memoize2(function_random)
 
 
 def function5(z):
-    answer = reduce(lambda x, y: (x+1.0) * (y+1.0), z)
+    answer = reduce(lambda x, y: (x + 1.0) * (y + 1.0), z)
     return answer
 
 
@@ -40,24 +71,29 @@ def mode_custom(x):
     return x_mode
 
 
-def generateWeights(num_weights):
+def generate_weights(num_weights):
     random_nums = np.random.random(num_weights - 1)
     random_nums[::-1].sort()
     weights = [1.0 - random_nums[0]]
     for i in range(1, num_weights - 1):
-        weights.append(random_nums[i-1] - random_nums[i])
+        weights.append(random_nums[i - 1] - random_nums[i])
     weights.append(random_nums[-1])
     return weights
 
 
-class PSOCategorical:
+def normalise(vector):
+    summation = sum(vector)
+    vector = [n / summation for n in vector]
+    return vector
 
+
+class PSOCategorical:
     def __init__(self, fit_function, n_particles, n_discrete_vars, scaling_factor):
         self.weight_local = 0.729
         self.weight_global = 1.49618
         self.inertia_weight = 1.49618
-        self.n_iterations = 50
-        self.n_samples = 30
+        self.n_iterations = 500
+        self.n_samples = 1
         self.n_particles = n_particles
         self.scaling_factor = scaling_factor
         self.n_discrete_vars = n_discrete_vars
@@ -67,11 +103,16 @@ class PSOCategorical:
         self.artif_angle = 190.0
         while self.artif_angle > self.real_angle:
             self.artif_angle = np.random.choice([1.0, 2.0, 5.0, 10.0, 15.0, 30.0, 60.0, 90.0, 120.0, 180.0])
-        self.categories = [list(range(3)), list(range(3)), list(range(6)), list(range(4)), list(range(4)), list(range(4)), list(range(5)), list(range(4)), list(range(2)), list(range(2))]
+        self.categories = [list(range(3)), list(range(3)), list(range(6)), list(range(4)), list(range(4)),
+                           list(range(4)), list(range(5)), list(range(4)), list(range(2)), list(range(2))]
         self.positions = [[[0 for _ in var] for var in self.categories] for _ in range(self.n_particles)]
         self.velocities = [[[0 for _ in var] for var in self.categories] for _ in range(self.n_particles)]
         self.local_best_fitness = [999999.0 for _ in range(self.n_particles)]
         self.global_best_fitness = 999999.0
+        self.local_best = []
+        self.global_best = []
+        self.samples = []
+        self.fitness = []
 
     def representative_sample(self, distribution):
         samples = []
@@ -87,15 +128,10 @@ class PSOCategorical:
             samples.append(self.sample_distribution(distribution))
         return mean([self.fit_function(sample) for sample in samples])
 
-    def normalise(self, vector):
-        summation = sum(vector)
-        vector = [n / summation for n in vector]
-        return vector
-
     def initialise_categorical_positions(self):
         for particle in range(self.n_particles):
             for variable in range(len(self.categories)):
-                weights = generateWeights(len(self.categories[variable]))
+                weights = generate_weights(len(self.categories[variable]))
                 self.positions[particle][variable] = weights
         self.local_best = deepcopy(self.positions)
         self.global_best = deepcopy(self.local_best[0])
@@ -118,7 +154,7 @@ class PSOCategorical:
 
         for part in range(self.n_particles):
             for var in range(len(self.categories)):
-                self.positions[part][var] = self.normalise(self.positions[part][var])
+                self.positions[part][var] = normalise(self.positions[part][var])
 
     def update_global_best(self, position, sample):
         for var in range(len(self.categories)):
@@ -126,7 +162,8 @@ class PSOCategorical:
                 if prob != sample[var]:
                     self.global_best[var][prob] = self.scaling_factor * position[var][prob]
                 else:
-                    summation = sum([(1.0 - self.scaling_factor) * pr if position[var].index(pr) != prob else 0 for pr in position[var]])
+                    summation = sum([(1.0 - self.scaling_factor) * pr if position[var].index(pr) != prob else 0 for pr
+                                     in position[var]])
                     self.global_best[var][prob] = position[var][prob] + summation
 
     def update_local_best(self, particle, position, sample):
@@ -135,7 +172,8 @@ class PSOCategorical:
                 if prob != sample[var]:
                     self.local_best[particle][var][prob] = self.scaling_factor * position[var][prob]
                 else:
-                    summation = sum([(1.0 - self.scaling_factor) * pr if position[var].index(pr) != prob else 0 for pr in position[var]])
+                    summation = sum([(1.0 - self.scaling_factor) * pr if position[var].index(pr) != prob else 0 for pr
+                                     in position[var]])
                     self.local_best[particle][var][prob] = position[var][prob] + summation
 
     def sample_distribution(self, distribution):
@@ -146,11 +184,18 @@ class PSOCategorical:
         for particle in range(self.n_particles):
             for var in range(len(self.categories)):
                 for prob in range(len(self.categories[var])):
-                    self.velocities[particle][var][prob] = self.inertia_weight * self.velocities[particle][var][prob] + \
-                                      self.weight_global * random() * (self.global_best[var][prob] - self.positions[particle][var][prob]) + \
-                                      self.weight_local * random() * (self.local_best[particle][var][prob] - self.positions[particle][var][prob])
+                    self.velocities[particle][var][prob] = self.inertia_weight * self.velocities[particle][var][prob] \
+                                                           + self.weight_global * random() * \
+                                                           (self.global_best[var][prob] -
+                                                            self.positions[particle][var][prob]) + \
+                                                           self.weight_local * random() * \
+                                                           (self.local_best[particle][var][prob] -
+                                                            self.positions[particle][var][prob])
 
     def run(self):
+        from time import time
+        start = time()
+        best_global = []
         self.initialise_categorical_positions()
         self.initialise_categorical_velocities()
         self.calculate_new_velocities()
@@ -158,6 +203,7 @@ class PSOCategorical:
         for iteration in range(self.n_iterations):
             self.samples = [self.representative_sample(position) for position in self.positions]
             self.fitness = [self.fitness_function(position) for position in self.positions]
+            # self.fitness = Parallel(n_jobs=-1)(delayed(self.fitness_function)(position) for position in self.positions)
 
             for particle in range(self.n_particles):
                 if self.fitness[particle] < self.local_best_fitness[particle]:
@@ -167,9 +213,18 @@ class PSOCategorical:
             max_local = max(self.local_best_fitness)
             if max_local < self.global_best_fitness:
                 self.global_best_fitness = max_local
-                self.update_global_best(self.local_best[self.local_best_fitness.index(max_local)], self.representative_sample(self.local_best[self.local_best_fitness.index(max_local)]))
+                self.update_global_best(self.local_best[self.local_best_fitness.index(max_local)],
+                                        self.representative_sample(
+                                            self.local_best[self.local_best_fitness.index(max_local)]))
+            best_global.append(self.global_best_fitness)
+            # print(self.global_best_fitness, self.global_best)
 
-            print(self.global_best_fitness, self.global_best)
+        print(time() - start, "seconds")
+        plt.figure()
+        plt.plot(best_global)
+        plt.show()
+        return self.global_best_fitness, self.global_best, self.representative_sample(self.global_best)
+
 
 if __name__ == '__main__':
     # print(generateWeights(3))
@@ -177,11 +232,11 @@ if __name__ == '__main__':
     # weight1 = np.zeros((n, 3))
     # for i in range(n):
     #     weight1[i] = generateWeights(3)
-
-    # plt.figure()
-    # plt.scatter(weight1[:, 0], weight1[:, 1], s=0.3)
-    # # ax = plt.gca(projection='3d')
-    # # ax.scatter(weight1[:, 0], weight1[:, 1], weight1[:, 2], s=0.3)
-    # plt.show()
-    opt = PSOCategorical(function5, 50, 0, 0.5)
-    opt.run()
+    opt = PSOCategorical(function2, 50, 0, 0.01)
+    fit, vec, best_vec = opt.run()
+    print(best_vec, fit)
+    plt.figure()
+    my_xticks = [item for sublist in opt.categories for item in sublist]
+    plt.xticks(list(range(37)), my_xticks)
+    plt.plot([item for sublist in vec for item in sublist])
+    plt.show()
