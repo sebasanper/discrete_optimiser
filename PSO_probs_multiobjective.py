@@ -7,10 +7,10 @@ from statistics import mode, mean, StatisticsError
 from functools import reduce
 from joblib import Parallel, delayed
 
-style.use('ggplot')
+style.use('fivethirtyeight')
 
 
-def Memoize2(fn):
+def memoize(fn):
     """returns a memoized version of any function that can be called
     with the same list of arguments.
     Usage: foo = memoize(foo)"""
@@ -46,12 +46,12 @@ def function2(x):
 
 
 def function3(x):
-    return abs(np.average(x) - 2.5)
+    return abs(np.average(x) - 0.01)
 
 
 def function_random(x):
     return random() * 1000.0
-function_random = Memoize2(function_random)
+function_random = memoize(function_random)
 
 
 def function5(z):
@@ -92,7 +92,7 @@ class PSOCategorical:
         self.weight_local = 0.729
         self.weight_global = 1.49618
         self.inertia_weight = 1.49618
-        self.n_iterations = 500
+        self.n_iterations = 1000
         self.n_samples = 1
         self.n_particles = n_particles
         self.scaling_factor = scaling_factor
@@ -105,8 +105,10 @@ class PSOCategorical:
             self.artif_angle = np.random.choice([1.0, 2.0, 5.0, 10.0, 15.0, 30.0, 60.0, 90.0, 120.0, 180.0])
         self.categories = [list(range(3)), list(range(3)), list(range(6)), list(range(4)), list(range(4)),
                            list(range(4)), list(range(5)), list(range(4)), list(range(2)), list(range(2))]
-        self.positions = [[[0 for _ in var] for var in self.categories] for _ in range(self.n_particles)]
-        self.velocities = [[[0 for _ in var] for var in self.categories] for _ in range(self.n_particles)]
+        self.positions_categorical = [[[0 for _ in var] for var in self.categories] for _ in range(self.n_particles)]
+        self.velocities_categorical = [[[0 for _ in var] for var in self.categories] for _ in range(self.n_particles)]
+        self.positions_discrete = [[0 for _ in range(self.n_discrete_vars)] for _ in range(self.n_particles)]
+        self.velocities_discrete = [[0 for _ in range(self.n_discrete_vars)] for _ in range(self.n_particles)]
         self.local_best_fitness = [999999.0 for _ in range(self.n_particles)]
         self.global_best_fitness = 999999.0
         self.local_best = []
@@ -132,29 +134,29 @@ class PSOCategorical:
         for particle in range(self.n_particles):
             for variable in range(len(self.categories)):
                 weights = generate_weights(len(self.categories[variable]))
-                self.positions[particle][variable] = weights
-        self.local_best = deepcopy(self.positions)
+                self.positions_categorical[particle][variable] = weights
+        self.local_best = deepcopy(self.positions_categorical)
         self.global_best = deepcopy(self.local_best[0])
 
     def initialise_categorical_velocities(self):
         for particle in range(self.n_particles):
             for variable in range(len(self.categories)):
                 velocities = [0.0 for _ in self.categories[variable]]
-                self.velocities[particle][variable] = velocities
+                self.velocities_categorical[particle][variable] = velocities
 
     def update_position(self):
         for particle in range(self.n_particles):
             for var in range(len(self.categories)):
                 for prob in range(len(self.categories[var])):
-                    self.positions[particle][var][prob] += self.velocities[particle][var][prob]
-                    if self.positions[particle][var][prob] > 1:
-                        self.positions[particle][var][prob] = 1.0
-                    elif self.positions[particle][var][prob] < 0:
-                        self.positions[particle][var][prob] = 0.0
+                    self.positions_categorical[particle][var][prob] += self.velocities_categorical[particle][var][prob]
+                    if self.positions_categorical[particle][var][prob] > 1:
+                        self.positions_categorical[particle][var][prob] = 1.0
+                    elif self.positions_categorical[particle][var][prob] < 0:
+                        self.positions_categorical[particle][var][prob] = 0.0
 
         for part in range(self.n_particles):
             for var in range(len(self.categories)):
-                self.positions[part][var] = normalise(self.positions[part][var])
+                self.positions_categorical[part][var] = normalise(self.positions_categorical[part][var])
 
     def update_global_best(self, position, sample):
         for var in range(len(self.categories)):
@@ -184,13 +186,13 @@ class PSOCategorical:
         for particle in range(self.n_particles):
             for var in range(len(self.categories)):
                 for prob in range(len(self.categories[var])):
-                    self.velocities[particle][var][prob] = self.inertia_weight * self.velocities[particle][var][prob] \
-                                                           + self.weight_global * random() * \
+                    self.velocities_categorical[particle][var][prob] = self.inertia_weight * self.velocities_categorical[particle][var][prob] \
+                                                                       + self.weight_global * random() * \
                                                            (self.global_best[var][prob] -
-                                                            self.positions[particle][var][prob]) + \
+                                                            self.positions_categorical[particle][var][prob]) + \
                                                            self.weight_local * random() * \
                                                            (self.local_best[particle][var][prob] -
-                                                            self.positions[particle][var][prob])
+                                                            self.positions_categorical[particle][var][prob])
 
     def run(self):
         from time import time
@@ -201,13 +203,14 @@ class PSOCategorical:
         self.calculate_new_velocities()
         self.update_position()
         for iteration in range(self.n_iterations):
-            self.samples = [self.representative_sample(position) for position in self.positions]
-            self.fitness = [self.fitness_function(position) for position in self.positions]
-            # self.fitness = Parallel(n_jobs=-1)(delayed(self.fitness_function)(position) for position in self.positions)
+            self.samples = [self.representative_sample(position) for position in self.positions_categorical]
+            self.fitness = [self.fitness_function(position) for position in self.positions_categorical]
+            # self.fitness = Parallel(n_jobs=-1)(delayed(self.fitness_function)(position) for position in
+            # self.positions)
 
             for particle in range(self.n_particles):
                 if self.fitness[particle] < self.local_best_fitness[particle]:
-                    self.update_local_best(particle, self.positions[particle], self.samples[particle])
+                    self.update_local_best(particle, self.positions_categorical[particle], self.samples[particle])
                     self.local_best_fitness[particle] = self.fitness[particle]
 
             max_local = max(self.local_best_fitness)
@@ -217,9 +220,9 @@ class PSOCategorical:
                                         self.representative_sample(
                                             self.local_best[self.local_best_fitness.index(max_local)]))
             best_global.append(self.global_best_fitness)
-            # print(self.global_best_fitness, self.global_best)
 
         print(time() - start, "seconds")
+        print(self.global_best_fitness, self.representative_sample(self.global_best))
         plt.figure()
         plt.plot(best_global)
         plt.show()
@@ -227,14 +230,8 @@ class PSOCategorical:
 
 
 if __name__ == '__main__':
-    # print(generateWeights(3))
-    # n = 10000
-    # weight1 = np.zeros((n, 3))
-    # for i in range(n):
-    #     weight1[i] = generateWeights(3)
-    opt = PSOCategorical(function2, 50, 0, 0.01)
+    opt = PSOCategorical(function3, 250, 0, 0.01)
     fit, vec, best_vec = opt.run()
-    print(best_vec, fit)
     plt.figure()
     my_xticks = [item for sublist in opt.categories for item in sublist]
     plt.xticks(list(range(37)), my_xticks)
