@@ -7,7 +7,7 @@ from statistics import mode, mean, StatisticsError
 from functools import reduce
 from joblib import Parallel, delayed
 
-style.use('fivethirtyeight')
+style.use('ggplot')
 
 
 def memoize(fn):
@@ -32,6 +32,7 @@ def memoize(fn):
         if (args_cache, items_cache) not in foo.past_calls:
             foo.past_calls[(args_cache, items_cache)] = fn(*args, **kwargs)
         return foo.past_calls[(args_cache, items_cache)]
+
     foo.past_calls = {}
     foo.__name__ = 'memoized_' + fn.__name__
     return foo
@@ -51,6 +52,8 @@ def function3(x):
 
 def function_random(x):
     return random() * 1000.0
+
+
 function_random = memoize(function_random)
 
 
@@ -92,8 +95,8 @@ class PSOCategorical:
         self.weight_local = 0.729
         self.weight_global = 1.49618
         self.inertia_weight = 1.49618
-        self.n_iterations = 1000
-        self.n_samples = 1
+        self.n_iterations = 250
+        self.n_samples = 5
         self.n_particles = n_particles
         self.scaling_factor = scaling_factor
         self.n_discrete_vars = n_discrete_vars
@@ -186,13 +189,15 @@ class PSOCategorical:
         for particle in range(self.n_particles):
             for var in range(len(self.categories)):
                 for prob in range(len(self.categories[var])):
-                    self.velocities_categorical[particle][var][prob] = self.inertia_weight * self.velocities_categorical[particle][var][prob] \
+                    self.velocities_categorical[particle][var][prob] = self.inertia_weight * \
+                                                                       self.velocities_categorical[particle][var][prob] \
                                                                        + self.weight_global * random() * \
-                                                           (self.global_best[var][prob] -
-                                                            self.positions_categorical[particle][var][prob]) + \
-                                                           self.weight_local * random() * \
-                                                           (self.local_best[particle][var][prob] -
-                                                            self.positions_categorical[particle][var][prob])
+                                                                         (self.global_best[var][prob] -
+                                                                          self.positions_categorical[particle][var][
+                                                                              prob]) + \
+                                                                       self.weight_local * random() * \
+                                                                       (self.local_best[particle][var][prob] -
+                                                                        self.positions_categorical[particle][var][prob])
 
     def run(self):
         from time import time
@@ -205,8 +210,7 @@ class PSOCategorical:
         for iteration in range(self.n_iterations):
             self.samples = [self.representative_sample(position) for position in self.positions_categorical]
             self.fitness = [self.fitness_function(position) for position in self.positions_categorical]
-            # self.fitness = Parallel(n_jobs=-1)(delayed(self.fitness_function)(position) for position in
-            # self.positions)
+            # self.fitness = Parallel(n_jobs=2)(delayed(self.fitness_function)(position) for position in self.positions_categorical)
 
             for particle in range(self.n_particles):
                 if self.fitness[particle] < self.local_best_fitness[particle]:
@@ -230,7 +234,7 @@ class PSOCategorical:
 
 
 if __name__ == '__main__':
-    opt = PSOCategorical(function3, 250, 0, 0.01)
+    opt = PSOCategorical(function3, 25, 0, 0.01)
     fit, vec, best_vec = opt.run()
     plt.figure()
     my_xticks = [item for sublist in opt.categories for item in sublist]

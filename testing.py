@@ -1,24 +1,26 @@
+from random import choice
 import numpy as np
-from statistics import mode, StatisticsError
+from math import sin
+categories = [list(range(3)), list(range(3)), list(range(6)), list(range(4)), list(range(4)),
+                           list(range(4)), list(range(5)), list(range(4)), list(range(2)), list(range(2))]
 
 
-def mode_custom(x):
-    i = 0
-    while True:
-        try:
-            x_mode = mode(x)
-            break
-        except StatisticsError:
-            np.append(x, i)
-            print(x)
-            i += 1
-    return x_mode
+def function1(x):
+    return 1.0 / len(x) * sum([float(item) ** 2.0 for item in x])
 
-a = np.array([([2, 3, 1]), ([4, 5])])
-print(a.tolist())
 
-# b = [4, 5, 6]
-# print(b)
-# b = np.array(b)
-# b = np.append(b, [3, 3, 3])
-# print(b)
+def function2(x):
+    return 1.0 / len(x) * sum([(float(item) - 2.0) ** 2.0 for item in x])
+
+
+def function3(x):
+    return 1.0 / len(x) * sum([item ** 2.0 for item in x])
+
+
+def function4(x):
+    return 1.0 / len(x) * sum([sin(item) for item in x])
+
+with open("all_values.dat", "w") as output:
+    for _ in range(100000):
+        x = [choice(categories[i]) for i in range(len(categories))]
+        output.write("{} {}\n".format(function3(x), function4(x)))
