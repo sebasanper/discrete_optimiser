@@ -21,6 +21,6 @@ def function4(x):
     return 1.0 / len(x) * sum([sin(item) for item in x])
 
 with open("all_values.dat", "w") as output:
-    for _ in range(100000):
+    for _ in range(10000):
         x = [choice(categories[i]) for i in range(len(categories))]
-        output.write("{} {}\n".format(function3(x), function4(x)))
+        output.write("{} {}\n".format(function1(x), function2(x)))

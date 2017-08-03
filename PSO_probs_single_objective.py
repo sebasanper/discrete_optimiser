@@ -92,9 +92,9 @@ def normalise(vector):
 
 class PSOCategorical:
     def __init__(self, fit_function, n_particles, n_discrete_vars, scaling_factor):
-        self.weight_local = 0.729
+        self.weight_local = 1.49618
         self.weight_global = 1.49618
-        self.inertia_weight = 1.49618
+        self.inertia_weight = 0.729
         self.n_iterations = 250
         self.n_samples = 5
         self.n_particles = n_particles

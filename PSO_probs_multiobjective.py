@@ -81,7 +81,10 @@ def generate_weights(num_weights):
 
 def normalise(vector):
     summation = sum(vector)
-    vector = [n / summation for n in vector]
+    if summation == 0.0:
+        vector = generate_weights(len(vector))
+    else:
+        vector = [n / summation for n in vector]
     return vector
 
 
@@ -163,11 +166,11 @@ def eliminate(list_, to_be_deleted):
 
 class PSOCategorical:
     def __init__(self, n_particles, n_discrete_vars, scaling_factor):
-        self.weight_local = 0.729
+        self.weight_local = 1.49618
         self.weight_global = 1.49618
-        self.inertia_weight = 1.49618
-        self.n_iterations = 1000
-        self.n_samples = 5
+        self.inertia_weight = 0.729
+        self.n_iterations = 1
+        self.n_samples = 1
         self.n_particles = n_particles
         self.scaling_factor = scaling_factor
         self.n_discrete_vars = n_discrete_vars
@@ -180,8 +183,6 @@ class PSOCategorical:
                            list(range(4)), list(range(5)), list(range(4)), list(range(2)), list(range(2))]
         self.positions_categorical = [[[0 for _ in var] for var in self.categories] for _ in range(self.n_particles)]
         self.velocities_categorical = [[[0 for _ in var] for var in self.categories] for _ in range(self.n_particles)]
-        self.positions_discrete = [[0 for _ in range(self.n_discrete_vars)] for _ in range(self.n_particles)]
-        self.velocities_discrete = [[0 for _ in range(self.n_discrete_vars)] for _ in range(self.n_particles)]
         self.local_best_fitness = [999999.9 for _ in range(self.n_particles)]
         self.global_best_fitness = 999999.9
         self.local_best = []
@@ -190,7 +191,7 @@ class PSOCategorical:
         self.fitness = [[999999.9, 999999.9] for _ in range(self.n_particles)]
         self.obj_function = [0.0 for _ in range(self.n_particles)]
         self.archive = []
-        self.archive_size = 1000
+        self.archive_size = 10
         self.old_swarm = []
 
     def update_archive(self, swarm):
@@ -237,7 +238,7 @@ class PSOCategorical:
     def initialise_categorical_velocities(self):
         for particle in range(self.n_particles):
             for variable in range(len(self.categories)):
-                velocities = [0.0 for _ in self.categories[variable]]
+                velocities = [random() for _ in self.categories[variable]]
                 self.velocities_categorical[particle][variable] = velocities
 
     def update_position(self):
@@ -252,6 +253,7 @@ class PSOCategorical:
 
         for part in range(self.n_particles):
             for var in range(len(self.categories)):
+                # print(self.positions_categorical[part][var])
                 self.positions_categorical[part][var] = normalise(self.positions_categorical[part][var])
 
     def update_global_best(self, position, sample):
@@ -282,6 +284,10 @@ class PSOCategorical:
         for particle in range(self.n_particles):
             for var in range(len(self.categories)):
                 for prob in range(len(self.categories[var])):
+                    if random() < 0.2:
+                        turbulence = random()
+                    else:
+                        turbulence = 0.0
                     self.velocities_categorical[particle][var][prob] = self.inertia_weight * \
                                                                        self.velocities_categorical[particle][var][prob] \
                                                                        + self.weight_global * random() * \
@@ -289,32 +295,42 @@ class PSOCategorical:
                                                                        self.positions_categorical[particle][var][prob])\
                                                                        + self.weight_local * random() * \
                                                                        (self.local_best[particle][var][prob] -
-                                                                        self.positions_categorical[particle][var][prob])
+                                                                        self.positions_categorical[particle][var][prob])\
+                                                                       + turbulence
 
     def run(self):
         plt.ion()
         fig, ax = plt.subplots()
         from time import time
-        from math import sin, pi
+        from math import sin, pi, copysign
         start = time()
-        best_global = []
         self.initialise_categorical_positions()
         self.initialise_categorical_velocities()
-        self.calculate_new_velocities()
-        self.update_position()
+        # self.calculate_new_velocities()
+        # self.update_position()
         self.n_iterations = 1000
         self.n_samples = 1
+        self.archive_size = 200
         self.archive = deepcopy(self.fitness)
         for iteration in range(self.n_iterations):
-            weight1 = sin(4.0 * pi * iteration / self.n_iterations)
-            if weight1 == 0.0:
-                weight1 = 0.00001
-            elif weight1 == 1.0:
-                weight1 = 0.99999
+            # print(len(self.archive))
+            if iteration % 100 == 0 and iteration > 1:
+                if sum([sqrt((item1[0] - item2[0]) ** 2.0 + (item1[1] - item2[1]) ** 2.0) for item1, item2 in zip(self.archive, history)]) <= 0.001:
+                    print("early exit", iteration)
+                    break
+            if iteration % 100 == 0:
+                history = deepcopy(self.archive)
+
+            self.calculate_new_velocities()
+            self.update_position()
+            # weight1 = copysign(1.0, sin(3.0 * 2.0 * pi * iteration / self.n_iterations))
+            # if weight1 < 1:
+            #     weight1 = 0.0
+            weight1 = abs(sin(3.0 * 2.0 * pi * iteration / self.n_iterations))
             weight2 = 1.0 - weight1
             self.samples = [self.representative_sample(position) for position in self.positions_categorical]
             self.old_swarm = deepcopy(self.fitness)
-            self.fitness = [self.fitness_function(position, [function3, function4]) for position in self.positions_categorical]
+            self.fitness = [self.fitness_function(position, [function1, function2]) for position in self.positions_categorical]
             # self.fitness = Parallel(n_jobs=-1)(delayed(self.fitness_function)(position) for position in self.positions_categorical)
             self.function_values = []
             for particle in range(self.n_particles):
@@ -326,28 +342,23 @@ class PSOCategorical:
                 if self.obj_function[particle] < self.local_best_fitness[particle]:
                     self.update_local_best(particle, self.positions_categorical[particle], self.samples[particle])
                     self.local_best_fitness[particle] = self.obj_function[particle]
-
-            max_local = max(self.local_best_fitness)
-            if max_local < self.global_best_fitness:
-                self.global_best_fitness = max_local
-                self.update_global_best(self.local_best[self.local_best_fitness.index(max_local)],
-                                        self.representative_sample(
-                                            self.local_best[self.local_best_fitness.index(max_local)]))
-            best_global.append(self.global_best_fitness)
+                if self.obj_function[particle] < self.global_best_fitness:
+                    self.update_global_best(self.positions_categorical[particle], self.samples[particle])
 
             plt.cla()
             # ax.set_ylim([0, 5])
             # ax.set_xlim([0, 10])
             ax.scatter(*zip(*self.archive))
             plt.pause(0.01)
-        with open("optimiser_output2.dat", "w") as out:
+        with open("optimiser_output_bang_turbulence2.dat", "w") as out:
             for item in self.archive:
                 out.write("{} {}\n".format(item[0], item[1]))
         print(time() - start, "seconds")
         while True:
             plt.pause(0.05)
-
+#  TODO archive to include vector, not only fitness.
+#  TODO multi-objectives > 2
 
 if __name__ == '__main__':
-    opt = PSOCategorical(10, 0, 0.9)
+    opt = PSOCategorical(20, 0, 0.5)
     opt.run()
