@@ -8,6 +8,7 @@ from functools import reduce
 from joblib import Parallel, delayed
 from pareto_epsilon import eps_sort
 from math import sqrt, sin
+from dynamic_weights2 import dynamic_weights
 
 style.use('ggplot')
 
@@ -40,12 +41,12 @@ def memoize(fn):
     return foo
 
 
-def function1(x):
+def functi1(x):
     return 1.0 / len(x) * sum([item ** 2.0 for item in x])
-function1 = memoize(function1)
+# functi1 = memoize(functi1)
 
 
-def function2(x):
+def functio2(x):
     return 1.0 / len(x) * sum([(item - 2.0) ** 2.0 for item in x])
 
 
@@ -54,7 +55,7 @@ def function3(x):
 
 
 def function4(x):
-    return 1.0 / len(x) * sum([sin(item) for item in x])
+    return 1.0 / sum(x) ** 2.0
 
 
 def mode_custom(x):
@@ -89,7 +90,14 @@ def normalise(vector):
 
 
 def dominates(candidate, particle):
-    return sum([candidate[x] <= particle[x] for x in range(len(candidate))]) == len(candidate)
+    return sum([candidate[0][x] <= particle[0][x] for x in range(len(candidate[0]))]) == len(candidate[0])
+
+
+def dominates_completely(candidate, particle):
+    if candidate != particle:
+        return sum([candidate[0][x] <= particle[0][x] for x in range(len(candidate[0]))]) == len(candidate[0])
+    else:
+        return False
 
 
 def dominate_one_in_swarm(candidate, swarm):
@@ -124,6 +132,16 @@ def dominated(archive):
     return out
 
 
+def dominated_oldarchive(archive, oldarchive):
+    counter = 0.0
+    for particle1 in oldarchive:
+        for particle2 in archive:
+            if dominates_completely(particle2, particle1):
+                counter += 1.0
+                break
+    return counter
+
+
 def not_dominated(candidate, archive):
     for particle in archive:
         if dominates(particle, candidate):
@@ -143,7 +161,7 @@ def distance_multidimension(x, y):
 
 def similarity(candidate, archive, tolerance):
     for particle in archive:
-        if distance_multidimension(candidate, particle) < tolerance:
+        if distance_multidimension(candidate[0], particle[0]) < tolerance:
             flag = True
             break
     else:
@@ -164,23 +182,25 @@ def eliminate(list_, to_be_deleted):
             list_.pop(i)
 
 
+def fitness_function(sample, fitness_functions):
+    return [fitnessfunc(sample) for fitnessfunc in fitness_functions]
+
+
 class PSOCategorical:
-    def __init__(self, n_particles, n_discrete_vars, scaling_factor):
+    def __init__(self, n_particles, scaling_factor, function1, function2):
+        self.n_functions = 2
+        self.function1 = function1
+        self.function2 = function2
         self.weight_local = 1.49618
         self.weight_global = 1.49618
         self.inertia_weight = 0.729
-        self.n_iterations = 1
+        self.n_iterations = 100
         self.n_samples = 1
+        self.archive_size = 20
         self.n_particles = n_particles
         self.scaling_factor = scaling_factor
-        self.n_discrete_vars = n_discrete_vars
-        self.bins = randint(2, 25)
-        self.real_angle = np.random.choice([30.0, 60.0, 90.0, 120.0, 180.0])
-        self.artif_angle = 190.0
-        while self.artif_angle > self.real_angle:
-            self.artif_angle = np.random.choice([1.0, 2.0, 5.0, 10.0, 15.0, 30.0, 60.0, 90.0, 120.0, 180.0])
-        self.categories = [list(range(3)), list(range(3)), list(range(6)), list(range(4)), list(range(4)),
-                           list(range(4)), list(range(5)), list(range(4)), list(range(2)), list(range(2))]
+        self.categories = [list(range(5)), list(range(3)), list(range(6)), list(range(4)), list(range(4)),
+                           list(range(4)), list(range(5)), list(range(4)), list(range(2)), list(range(2)), list(range(2, 25)), list(range(4)), list(range(4))]
         self.positions_categorical = [[[0 for _ in var] for var in self.categories] for _ in range(self.n_particles)]
         self.velocities_categorical = [[[0 for _ in var] for var in self.categories] for _ in range(self.n_particles)]
         self.local_best_fitness = [999999.9 for _ in range(self.n_particles)]
@@ -188,11 +208,11 @@ class PSOCategorical:
         self.local_best = []
         self.global_best = []
         self.samples = [[] for _ in range(self.n_particles)]
-        self.fitness = [[999999.9, 999999.9] for _ in range(self.n_particles)]
+        self.fitness = [[999999.9 for _ in range(self.n_functions)] for _ in range(self.n_particles)]
         self.obj_function = [0.0 for _ in range(self.n_particles)]
         self.archive = []
-        self.archive_size = 10
         self.old_swarm = []
+        self.fitness_and_samples = list(zip(self.fitness, self.samples))
 
     def update_archive(self, swarm):
         for particle in swarm:
@@ -219,13 +239,6 @@ class PSOCategorical:
         samples = np.array(samples)
         representative_sample = [mode_custom(samples[:, i]) for i in range(len(self.categories))]
         return representative_sample
-
-    def fitness_function(self, distribution, fitness_functions):
-        samples = []
-        for _ in range(self.n_samples):
-            samples.append(self.sample_distribution(distribution))
-        means = [mean([fitness_function(sample) for sample in samples]) for fitness_function in fitness_functions]
-        return means
 
     def initialise_categorical_positions(self):
         for particle in range(self.n_particles):
@@ -306,38 +319,43 @@ class PSOCategorical:
         start = time()
         self.initialise_categorical_positions()
         self.initialise_categorical_velocities()
-        # self.calculate_new_velocities()
-        # self.update_position()
-        self.n_iterations = 1000
-        self.n_samples = 1
-        self.archive_size = 200
-        self.archive = deepcopy(self.fitness)
+        weights_all = dynamic_weights(self.n_iterations, self.n_iterations / 4)  # Number is how many sine cycles the weights will follow.
         for iteration in range(self.n_iterations):
+            improvement_counter = 0.0
+            consolidation_counter = 0.0
+            improvement_counter5 = 0.0
+            consolidation_counter5 = 0.0
+            improvement_counter10 = 0.0
+            consolidation_counter10 = 0.0
+            print iteration
+            archive_old = deepcopy(self.archive)
             # print(len(self.archive))
-            if iteration % 100 == 0 and iteration > 1:
-                if sum([sqrt((item1[0] - item2[0]) ** 2.0 + (item1[1] - item2[1]) ** 2.0) for item1, item2 in zip(self.archive, history)]) <= 0.001:
-                    print("early exit", iteration)
-                    break
-            if iteration % 100 == 0:
-                history = deepcopy(self.archive)
-
+            # if iteration % 500 == 0 and iteration > 1:
+            #     if sum([sqrt((item1[0][0] - item2[0][0]) ** 2.0 + (item1[0][1] - item2[0][1]) ** 2.0) for item1, item2 in zip(self.archive, history)]) <= 0.001:
+            #         print("early exit", iteration)
+            #         break
+            # if iteration % 500 == 0:
+            #     history = deepcopy(self.archive)
+            # weights = [weights_all[i][iteration] for i in range(self.n_functions)]
             self.calculate_new_velocities()
             self.update_position()
-            # weight1 = copysign(1.0, sin(3.0 * 2.0 * pi * iteration / self.n_iterations))
+            # weight1 = copysign(1.0, sin(10.0 * 2.0 * pi * iteration / self.n_iterations))
             # if weight1 < 1:
             #     weight1 = 0.0
-            weight1 = abs(sin(3.0 * 2.0 * pi * iteration / self.n_iterations))
+            weight1 = abs(sin(2.0 * 2.0 * pi * iteration / self.n_iterations))
             weight2 = 1.0 - weight1
+            weights = [weight1, weight2]
+            # if iteration % 25 == 0:
+            #     weights = generate_weights(self.n_functions)
             self.samples = [self.representative_sample(position) for position in self.positions_categorical]
-            self.old_swarm = deepcopy(self.fitness)
-            self.fitness = [self.fitness_function(position, [function1, function2]) for position in self.positions_categorical]
-            # self.fitness = Parallel(n_jobs=-1)(delayed(self.fitness_function)(position) for position in self.positions_categorical)
-            self.function_values = []
+            # self.fitness = [fitness_function(sample, [self.function1, self.function2]) for sample in self.samples]
+            self.fitness = Parallel(n_jobs=-1)(delayed(fitness_function)(sample, [self.function1, self.function2]) for sample in self.samples)
+            self.fitness_and_samples = list(zip(self.fitness, self.samples))
+            self.old_swarm = deepcopy(self.fitness_and_samples)
             for particle in range(self.n_particles):
-                self.obj_function[particle] = weight1 * self.fitness[particle][0] + weight2 * self.fitness[particle][1]
+                self.obj_function[particle] = sum([weights[i] * self.fitness[particle][i] for i in range(self.n_functions)])
 
-            self.update_archive(self.fitness)
-
+            self.update_archive(self.fitness_and_samples)
             for particle in range(self.n_particles):
                 if self.obj_function[particle] < self.local_best_fitness[particle]:
                     self.update_local_best(particle, self.positions_categorical[particle], self.samples[particle])
@@ -345,20 +363,47 @@ class PSOCategorical:
                 if self.obj_function[particle] < self.global_best_fitness:
                     self.update_global_best(self.positions_categorical[particle], self.samples[particle])
 
+            for old_particle in archive_old:
+                if old_particle in self.archive:
+                    consolidation_counter += 1.0
+            consolidation_counter /= float(len(self.archive))
+            improvement_counter = dominated_oldarchive(self.archive, archive_old) / float(len(self.archive))
+            with open("counters_termination4_1.dat", "a") as term:
+                term.write("{} {}\n".format(consolidation_counter, improvement_counter))
+            if iteration % 5 == 0:
+                for old_particle in archive_old:
+                    if old_particle in self.archive:
+                        consolidation_counter5 += 1.0
+                consolidation_counter5 /= float(len(self.archive))
+                improvement_counter5 = dominated_oldarchive(self.archive, archive_old) / float(len(self.archive))
+                with open("counters_termination4_5.dat", "a") as term:
+                    term.write("{} {}\n".format(consolidation_counter5, improvement_counter5))
+            if iteration % 10 == 0:
+                for old_particle in archive_old:
+                    if old_particle in self.archive:
+                        consolidation_counter10 += 1.0
+                consolidation_counter10 /= float(len(self.archive))
+                improvement_counter10 = dominated_oldarchive(self.archive, archive_old) / float(len(self.archive))
+                with open("counters_termination4_10.dat", "a") as term:
+                    term.write("{} {}\n".format(consolidation_counter10, improvement_counter10))
+
             plt.cla()
-            # ax.set_ylim([0, 5])
-            # ax.set_xlim([0, 10])
-            ax.scatter(*zip(*self.archive))
+            ax.scatter([item[0][0] for item in self.archive], [item[0][1] for item in self.archive])
             plt.pause(0.01)
-        with open("optimiser_output_bang_turbulence2.dat", "w") as out:
-            for item in self.archive:
-                out.write("{} {}\n".format(item[0], item[1]))
+
+            with open("mdao_opt_results4.dat", "a") as out:
+                for item in self.archive:
+                    for fun in range(self.n_functions):
+                        out.write("{} ".format(item[0][fun]))
+                    out.write("{}\n".format(item[1]))
+                out.write("\n\n")
         print(time() - start, "seconds")
-        while True:
-            plt.pause(0.05)
-#  TODO archive to include vector, not only fitness.
+        # while True:
+            # plt.pause(0.05)
+
 #  TODO multi-objectives > 2
 
+
 if __name__ == '__main__':
-    opt = PSOCategorical(20, 0, 0.5)
+    opt = PSOCategorical(20, 0.1, function1, function2)
     opt.run()

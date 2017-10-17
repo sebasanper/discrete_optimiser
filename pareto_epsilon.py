@@ -640,14 +640,20 @@ def cli(args):
 
 
 if __name__ == "__main__":
-    # cli(get_args(sys.argv))
     data = []
-    with open("all_values.dat", "r") as inp:
+    with open("/home/sebasanper/PycharmProjects/discrete_optimiser/kursawe_all_values.dat", "r") as inp:
         for line in inp:
             cols = line.split()
-            data.append([float(cols[0]), float(cols[1])])
+            data.append([float(cols[0]), float(cols[1])])#, float(cols[2])])
+    #with open("/home/sebasanper/PycharmProjects/discrete_optimiser/vien_all_values.dat", "r") as inp:
+    #    for line in inp:
+    #        cols = line.split()
+    #        data.append([float(cols[0]), float(cols[1]), float(cols[2])])
 
     pareto_front = eps_sort(data)
-    with open("pareto_front_test.dat", "w") as out:
-        for i in range(len(pareto_front)):
-            out.write("{} {}\n".format(pareto_front[i][0], pareto_front[i][1]))
+    # with open("/home/sebasanper/PycharmProjects/discrete_optimiser/vien_pareto_front.dat", "w") as out:
+    #    for i in range(len(pareto_front)):
+    #        out.write("{} {} {}\n".format(pareto_front[i][0], pareto_front[i][1], pareto_front[i][2]))
+    with open("/home/sebasanper/PycharmProjects/discrete_optimiser/kursawe_pareto_front.dat", "w") as out:
+            for i in range(len(pareto_front)):
+                out.write("{} {}\n".format(pareto_front[i][0], pareto_front[i][1]))
