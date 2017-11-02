@@ -166,7 +166,7 @@ class PSOCategorical:
         self.weight_global = 1.49618
         self.inertia_weight = 0.729
         self.n_iterations = 2000
-        self.n_samples = 5
+        self.n_samples = 15
         self.archive_size = 200
         self.n_particles = n_particles
         self.scaling_factor = scaling_factor
@@ -289,7 +289,7 @@ class PSOCategorical:
         start = time()
         self.initialise_categorical_positions()
         self.initialise_categorical_velocities()
-        weights_all = dynamic_weights(self.n_iterations, self.n_iterations / 4)  # Number is how many sine cycles the weights will follow.
+        # weights_all = dynamic_weights(self.n_iterations, self.n_iterations / 4)  # Number is how many sine cycles the weights will follow.
         for iteration in range(self.n_iterations):
             improvement_counter = 0.0
             consolidation_counter = 0.0
@@ -312,7 +312,7 @@ class PSOCategorical:
             # weight1 = copysign(1.0, sin(10.0 * 2.0 * pi * iteration / self.n_iterations))
             # if weight1 < 1:
             #     weight1 = 0.0
-            weight1 = abs(sin(3.0 * 2.0 * pi * iteration / self.n_iterations))
+            weight1 = abs(sin(10.0 * 2.0 * pi * iteration / self.n_iterations))
             weight2 = 1.0 - weight1
             weights = [weight1, weight2]
             # if iteration % 25 == 0:
@@ -338,7 +338,7 @@ class PSOCategorical:
                     consolidation_counter += 1.0
             consolidation_counter /= float(len(self.archive))
             improvement_counter = dominated_oldarchive(self.archive, archive_old) / float(len(self.archive))
-            with open("kursawe_1.dat", "a") as term:
+            with open("kursawe2_1.dat", "a") as term:
                 term.write("{} {}\n".format(consolidation_counter, improvement_counter))
             if iteration % 5 == 0:
                 for old_particle in archive_old:
@@ -346,7 +346,7 @@ class PSOCategorical:
                         consolidation_counter5 += 1.0
                 consolidation_counter5 /= float(len(self.archive))
                 improvement_counter5 = dominated_oldarchive(self.archive, archive_old) / float(len(self.archive))
-                with open("kursawe_5.dat", "a") as term:
+                with open("kursawe2_5.dat", "a") as term:
                     term.write("{} {}\n".format(consolidation_counter5, improvement_counter5))
             if iteration % 10 == 0:
                 for old_particle in archive_old:
@@ -354,14 +354,14 @@ class PSOCategorical:
                         consolidation_counter10 += 1.0
                 consolidation_counter10 /= float(len(self.archive))
                 improvement_counter10 = dominated_oldarchive(self.archive, archive_old) / float(len(self.archive))
-                with open("kursawe_10.dat", "a") as term:
+                with open("kursawe2_10.dat", "a") as term:
                     term.write("{} {}\n".format(consolidation_counter10, improvement_counter10))
 
             plt.cla()
             ax.scatter([item[0][0] for item in self.archive], [item[0][1] for item in self.archive])
             plt.pause(0.01)
 
-            with open("kursawe_mopsoc.dat", "a") as out:
+            with open("kursawe2_mopsoc.dat", "a") as out:
                 for item in self.archive:
                     for fun in range(self.n_functions):
                         out.write("{} ".format(item[0][fun]))

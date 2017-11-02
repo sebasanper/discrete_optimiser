@@ -342,7 +342,7 @@ class PSOCategorical:
             # weight1 = copysign(1.0, sin(10.0 * 2.0 * pi * iteration / self.n_iterations))
             # if weight1 < 1:
             #     weight1 = 0.0
-            weight1 = abs(sin(2.0 * 2.0 * pi * iteration / self.n_iterations))
+            weight1 = abs(sin(2.0 * 2.0 * pi * float(iteration) / float(self.n_iterations)))
             weight2 = 1.0 - weight1
             weights = [weight1, weight2]
             # if iteration % 25 == 0:
