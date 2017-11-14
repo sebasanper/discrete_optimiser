@@ -239,7 +239,7 @@ if __name__ == '__main__':
     #             x1, ans = rosenbrock([x, y])
     #             rosout.write("{} {} {} {} {}\n".format(x, y, x1[0], x1[1], ans))
 
-    opt = PSOCategorical(rosenbrock, 15, 0, 0.95)
+    opt = PSOCategorical(rosenbrock, 25, 0, 0.75)
     fit, vec, best_vec = opt.run()
     plt.figure()
     my_xticks = [item for sublist in opt.categories for item in sublist]
