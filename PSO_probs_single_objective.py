@@ -5,7 +5,7 @@ from random import randint, random
 from copy import deepcopy
 from statistics import mode, mean, StatisticsError
 from functools import reduce
-from joblib import Parallel, delayed
+# from joblib import Parallel, delayed
 
 style.use('ggplot')
 
@@ -95,19 +95,20 @@ class PSOCategorical:
         self.weight_local = 1.49618
         self.weight_global = 1.49618
         self.inertia_weight = 0.729
-        self.n_iterations = 250
+        self.n_iterations = 1350
         self.n_samples = 5
         self.n_particles = n_particles
         self.scaling_factor = scaling_factor
         self.n_discrete_vars = n_discrete_vars
         self.fit_function = fit_function
-        self.bins = randint(2, 25)
-        self.real_angle = np.random.choice([30.0, 60.0, 90.0, 120.0, 180.0])
-        self.artif_angle = 190.0
-        while self.artif_angle > self.real_angle:
-            self.artif_angle = np.random.choice([1.0, 2.0, 5.0, 10.0, 15.0, 30.0, 60.0, 90.0, 120.0, 180.0])
-        self.categories = [list(range(3)), list(range(3)), list(range(6)), list(range(4)), list(range(4)),
-                           list(range(4)), list(range(5)), list(range(4)), list(range(2)), list(range(2))]
+        # self.bins = randint(2, 25)
+        # self.real_angle = np.random.choice([30.0, 60.0, 90.0, 120.0, 180.0])
+        # self.artif_angle = 190.0
+        # while self.artif_angle > self.real_angle:
+        #     self.artif_angle = np.random.choice([1.0, 2.0, 5.0, 10.0, 15.0, 30.0, 60.0, 90.0, 120.0, 180.0])
+        # self.categories = [list(range(3)), list(range(3)), list(range(6)), list(range(4)), list(range(4)),
+        #                    list(range(4)), list(range(5)), list(range(4)), list(range(2)), list(range(2))]
+        self.categories = [list(range(100)), list(range(100))]
         self.positions_categorical = [[[0 for _ in var] for var in self.categories] for _ in range(self.n_particles)]
         self.velocities_categorical = [[[0 for _ in var] for var in self.categories] for _ in range(self.n_particles)]
         self.positions_discrete = [[0 for _ in range(self.n_discrete_vars)] for _ in range(self.n_particles)]
@@ -208,6 +209,7 @@ class PSOCategorical:
         self.calculate_new_velocities()
         self.update_position()
         for iteration in range(self.n_iterations):
+            print(iteration)
             self.samples = [self.representative_sample(position) for position in self.positions_categorical]
             self.fitness = [self.fitness_function(position) for position in self.positions_categorical]
             # self.fitness = Parallel(n_jobs=2)(delayed(self.fitness_function)(position) for position in self.positions_categorical)
@@ -230,14 +232,19 @@ class PSOCategorical:
         plt.figure()
         plt.plot(best_global)
         plt.show()
+        # print(self.global_best_fitness, self.global_best, self.representative_sample(self.global_best))
         return self.global_best_fitness, self.global_best, self.representative_sample(self.global_best)
 
 
 if __name__ == '__main__':
-    opt = PSOCategorical(function3, 25, 0, 0.01)
+    def rosenbrock(x):
+        x1 = [- 2.0 + 0.1 * x[0], - 2.0 + 0.1 * x[1]]
+        return (1.0 - x1[0]) ** 2.0 + 100.0 * (x1[1] - x1[0] ** 2.0) ** 2.0
+
+    opt = PSOCategorical(rosenbrock, 25, 0, 0.01)
     fit, vec, best_vec = opt.run()
     plt.figure()
     my_xticks = [item for sublist in opt.categories for item in sublist]
-    plt.xticks(list(range(37)), my_xticks)
+    plt.xticks(list(range(200)), my_xticks)
     plt.plot([item for sublist in vec for item in sublist])
     plt.show()
