@@ -95,8 +95,8 @@ class PSOCategorical:
         self.weight_local = 1.49618
         self.weight_global = 1.49618
         self.inertia_weight = 0.729
-        self.n_iterations = 1350
-        self.n_samples = 5
+        self.n_iterations = 200
+        self.n_samples = 3
         self.n_particles = n_particles
         self.scaling_factor = scaling_factor
         self.n_discrete_vars = n_discrete_vars
@@ -108,7 +108,7 @@ class PSOCategorical:
         #     self.artif_angle = np.random.choice([1.0, 2.0, 5.0, 10.0, 15.0, 30.0, 60.0, 90.0, 120.0, 180.0])
         # self.categories = [list(range(3)), list(range(3)), list(range(6)), list(range(4)), list(range(4)),
         #                    list(range(4)), list(range(5)), list(range(4)), list(range(2)), list(range(2))]
-        self.categories = [list(range(100)), list(range(100))]
+        self.categories = [list(range(1000)), list(range(1000))]
         self.positions_categorical = [[[0 for _ in var] for var in self.categories] for _ in range(self.n_particles)]
         self.velocities_categorical = [[[0 for _ in var] for var in self.categories] for _ in range(self.n_particles)]
         self.positions_discrete = [[0 for _ in range(self.n_discrete_vars)] for _ in range(self.n_particles)]
@@ -128,11 +128,12 @@ class PSOCategorical:
         representative_sample = [mode_custom(samples[:, i]) for i in range(len(self.categories))]
         return representative_sample
 
-    def fitness_function(self, distribution):
-        samples = []
-        for _ in range(self.n_samples):
-            samples.append(self.sample_distribution(distribution))
-        return mean([self.fit_function(sample) for sample in samples])
+    def fitness_function(self, sample):
+        return self.fit_function(sample)
+        # samples = []
+        # for _ in range(self.n_samples):
+        #     samples.append(self.sample_distribution(distribution))
+        # return mean([self.fit_function(sample) for sample in samples])
 
     def initialise_categorical_positions(self):
         for particle in range(self.n_particles):
@@ -208,43 +209,63 @@ class PSOCategorical:
         self.initialise_categorical_velocities()
         self.calculate_new_velocities()
         self.update_position()
+        fileout = open("convergence.dat", "w")
         for iteration in range(self.n_iterations):
-            print(iteration)
+            # print ("\n --- Iteration ")
             self.samples = [self.representative_sample(position) for position in self.positions_categorical]
-            self.fitness = [self.fitness_function(position) for position in self.positions_categorical]
+            self.fitness = [self.fitness_function(position) for position in self.samples]
+            # print("Samples --------")
+            # print (self.samples)
+            # print("\n Fitness -----------")
+            # print (self.fitness)
             # self.fitness = Parallel(n_jobs=2)(delayed(self.fitness_function)(position) for position in self.positions_categorical)
 
             for particle in range(self.n_particles):
                 if self.fitness[particle] < self.local_best_fitness[particle]:
                     self.update_local_best(particle, self.positions_categorical[particle], self.samples[particle])
                     self.local_best_fitness[particle] = self.fitness[particle]
-
-            max_local = max(self.local_best_fitness)
+            # print("\n ---- Local best fitness, max -----------")
+            max_local = min(self.local_best_fitness)
+            # print(self.local_best_fitness, max_local)
+            # print("\n ---- Local best particles, index -----------")
+            max_local_idx = self.local_best_fitness.index(max_local)
+            # print(self.local_best_fitness.index(max_local), self.samples[max_local_idx])
             if max_local < self.global_best_fitness:
                 self.global_best_fitness = max_local
+                xx = self.samples[max_local_idx]
                 self.update_global_best(self.local_best[self.local_best_fitness.index(max_local)],
-                                        self.representative_sample(
-                                            self.local_best[self.local_best_fitness.index(max_local)]))
-            best_global.append(self.global_best_fitness)
+                                        xx)
+                fileout.write("{} {} {} {}\n".format(iteration, self.global_best_fitness, xx[0], xx[1]))
 
+            # print("\n ---- Global best fitness, particle -----------")
+            print(iteration, self.global_best_fitness, xx)
+            best_global.append(self.global_best_fitness)
+        fileout.close()
         print(time() - start, "seconds")
-        print(self.global_best_fitness, self.representative_sample(self.global_best))
+        # print(self.global_best_fitness, self.representative_sample(self.global_best))
         plt.figure()
         plt.plot(best_global)
         plt.show()
         # print(self.global_best_fitness, self.global_best, self.representative_sample(self.global_best))
-        return self.global_best_fitness, self.global_best, self.representative_sample(self.global_best)
+        return self.global_best_fitness, self.global_best, xx
 
 
 if __name__ == '__main__':
     def rosenbrock(x):
-        x1 = [- 2.0 + 0.1 * x[0], - 2.0 + 0.1 * x[1]]
-        return (1.0 - x1[0]) ** 2.0 + 100.0 * (x1[1] - x1[0] ** 2.0) ** 2.0
+        x1 = [- 2.0 + 0.004 * x[0], - 2.0 + 0.004 * x[1]]
+        fun = (1.0 - x1[0]) ** 2.0 + 100.0 * (x1[1] - x1[0] ** 2.0) ** 2.0
+        return fun
 
-    opt = PSOCategorical(rosenbrock, 25, 0, 0.01)
+    # with open("rosenbrock.dat", "w") as rosout:
+    #     for x in range(100):
+    #         for y in range(100):
+    #             x1, ans = rosenbrock([x, y])
+    #             rosout.write("{} {} {} {} {}\n".format(x, y, x1[0], x1[1], ans))
+
+    opt = PSOCategorical(rosenbrock, 25, 0, 0.75)
     fit, vec, best_vec = opt.run()
     plt.figure()
     my_xticks = [item for sublist in opt.categories for item in sublist]
-    plt.xticks(list(range(200)), my_xticks)
+    plt.xticks(list(range(2000)), my_xticks)
     plt.plot([item for sublist in vec for item in sublist])
     plt.show()
