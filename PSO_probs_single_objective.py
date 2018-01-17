@@ -70,7 +70,7 @@ class PSOCategorical:
         self.weight_local = 1.49618
         self.weight_global = 1.49618
         self.inertia_weight = 0.729
-        self.n_iterations = 500
+        self.n_iterations = 10
         self.n_samples = 10
         self.n_particles = n_particles
         self.scaling_factor = scaling_factor

@@ -639,12 +639,23 @@ def cli(args):
     args.output.close()
 
 
+
 if __name__ == "__main__":
     data = []
-    with open("/home/sebasanper/PycharmProjects/discrete_optimiser/osyczka_all_values.dat", "r") as inp:
+    name = []
+    with open("../WINDOW_dev/optim_scores.dat", "r") as inp:
         for line in inp:
             cols = line.split()
-            data.append([float(cols[0]), float(cols[1])])#, float(cols[2])])
+            name.append(cols[0])
+            data.append([float(cols[1]), float(cols[2]), float(cols[3])])
+    # with open("../WINDOW_dev/new_mopsoc_linux.dat", "r") as inp:
+    #     for line in inp:
+    #         cols = line.split()
+    #         data.append([float(cols[0]), float(cols[1]), float(cols[2])])
+    # with open("../WINDOW_dev/mopsoc_sampling.dat", "r") as inp:
+    #     for line in inp:
+    #         cols = line.split()
+    #         data.append([abs(float(cols[8]) - 8.6200480173078038), float(cols[10]), float(cols[9])])
     #with open("/home/sebasanper/PycharmProjects/discrete_optimiser/vien_all_values.dat", "r") as inp:
     #    for line in inp:
     #        cols = line.split()
@@ -654,6 +665,10 @@ if __name__ == "__main__":
     # with open("/home/sebasanper/PycharmProjects/discrete_optimiser/vien_pareto_front.dat", "w") as out:
     #    for i in range(len(pareto_front)):
     #        out.write("{} {} {}\n".format(pareto_front[i][0], pareto_front[i][1], pareto_front[i][2]))
-    with open("/home/sebasanper/PycharmProjects/discrete_optimiser/osyczka_pareto_front.dat", "w") as out:
+    with open("../WINDOW_dev/pareto_final.dat", "w") as out:
             for i in range(len(pareto_front)):
-                out.write("{} {}\n".format(pareto_front[i][0], pareto_front[i][1]))
+                for j in range(len(name)):
+                    if pareto_front[i][0] == data[j][0]:
+                        wkf = name[j]
+                out.write("{} {} {} {}\n".format(wkf, pareto_front[i][0], pareto_front[i][1], pareto_front[i][2]))
+s
