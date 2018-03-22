@@ -49,11 +49,13 @@ if __name__ == '__main__':
     T = 100
     n_w = 5  # Needs to be such that T / 2 / n_w / 2 is an integer. T / (n_w * 4).
     ans = dynamic_weights(T, n_w)
-
+    with open("dyn_weights_good.dat", "w") as outf:
+        for i in range(len(ans[0])):
+            outf.write("{} {} {}\n".format(ans[0][i], ans[1][i], ans[2][i]))
     print(sum(ans[0]), sum(ans[1]), sum(ans[2]))
 
-    plt.figure()
-    plt.plot(list(range(len(ans[0]))), ans[0], c='red')
-    plt.plot(list(range(len(ans[1]))), ans[1], c='orange')
-    plt.plot(list(range(len(ans[2]))), ans[2])
-    plt.show()
+    # plt.figure()
+    # plt.plot(list(range(len(ans[0]))), ans[0], c='red')
+    # plt.plot(list(range(len(ans[1]))), ans[1], c='orange')
+    # plt.plot(list(range(len(ans[2]))), ans[2])
+    # plt.show()
