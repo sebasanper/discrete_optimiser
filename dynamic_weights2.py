@@ -46,8 +46,8 @@ def dynamic_weights(T, often):
 
 
 if __name__ == '__main__':
-    T = 100
-    n_w = 5  # Needs to be such that T / 2 / n_w / 2 is an integer. T / (n_w * 4).
+    T = 120
+    n_w = 2  # Needs to be such that T / 2 / n_w / 2 is an integer. T / (n_w * 4).
     ans = dynamic_weights(T, n_w)
     with open("dyn_weights_good.dat", "w") as outf:
         for i in range(len(ans[0])):
