@@ -376,5 +376,5 @@ class PSOCategorical:
 
 
 if __name__ == '__main__':
-    opt = PSOCategorical(20, 0.1, f1, f2)
+    opt = PSOCategorical(20, 0.99, f1, f2)
     opt.run()
