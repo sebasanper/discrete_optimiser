@@ -13,7 +13,7 @@ from dynamic_weights2 import dynamic_weights
 style.use('ggplot')
 
 def g(x):
-    return 1.0 + 9.0 / 2.0 * sum(x[2:])
+    return 1.0 + 9.0 / 2.0 * sum(x[1:])
 
 h = lambda x: 1.0 - sqrt(f1(x) / g(x))
 h2 = lambda x: 1.0 - (f1(x) / g(x)) ** 2.0
@@ -22,10 +22,10 @@ def h3(x):
     return 1.0 - sqrt(f1(x) / g(x)) - (f1(x) / g(x)) * sin(10.0 * pi * f1(x))
 
 def f1(x):
-    return x[0] * 0.05
+    return x[0] * 0.005
 
 def f2(x):
-    a = [0.05 * i for i in x]
+    a = [0.005 * i for i in x]
     return g(a) * h(a)
 
 
@@ -170,7 +170,7 @@ class PSOCategorical:
         self.archive_size = 200
         self.n_particles = n_particles
         self.scaling_factor = scaling_factor
-        self.categories = [list(range(20)) for _ in range(30)]
+        self.categories = [list(range(200)) for _ in range(30)]
         self.positions_categorical = [[[0 for _ in var] for var in self.categories] for _ in range(self.n_particles)]
         self.velocities_categorical = [[[0 for _ in var] for var in self.categories] for _ in range(self.n_particles)]
         self.local_best_fitness = [999999.9 for _ in range(self.n_particles)]
@@ -362,7 +362,7 @@ class PSOCategorical:
                 ax.scatter([item[0][0] for item in self.archive], [item[0][1] for item in self.archive])
                 plt.pause(0.01)
 
-                with open("zdt1_mopsoc2.dat", "a") as out:
+                with open("zdt1_mopsoc3.dat", "a") as out:
                     for item in self.archive:
                         for fun in range(self.n_functions):
                             out.write("{} ".format(item[0][fun]))
