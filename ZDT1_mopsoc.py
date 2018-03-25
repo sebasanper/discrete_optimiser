@@ -6,25 +6,27 @@ from copy import deepcopy
 from statistics import mode, mean, StatisticsError
 from functools import reduce
 from joblib import Parallel, delayed
-from pareto_epsilon import eps_sort
+# from pareto_epsilon import eps_sort
 from math import sqrt, sin, exp, pi, cos
 from dynamic_weights2 import dynamic_weights
 
 style.use('ggplot')
 
-g = lambda x: 1.0 + 9.0 / 29.0 * sum(x[2:])
+def g(x):
+    return 1.0 + 9.0 / 2.0 * sum(x[2:])
+
 h = lambda x: 1.0 - sqrt(f1(x) / g(x))
 h2 = lambda x: 1.0 - (f1(x) / g(x)) ** 2.0
-h3 = lambda x: 1.0 - sqrt(f1(x) / g(x)) - (f1(x) / g(x)) * sin(10.0 * pi * f1(x))
+
+def h3(x):
+    return 1.0 - sqrt(f1(x) / g(x)) - (f1(x) / g(x)) * sin(10.0 * pi * f1(x))
 
 def f1(x):
-    a = [0.005 * i for i in x]
-    return a[0]
-
+    return x[0] * 0.05
 
 def f2(x):
-    a = [0.005 * i for i in x]
-    return g(x) * h3(x)
+    a = [0.05 * i for i in x]
+    return g(a) * h(a)
 
 
 def mode_custom(x):
@@ -163,12 +165,12 @@ class PSOCategorical:
         self.weight_local = 1.49618
         self.weight_global = 1.49618
         self.inertia_weight = 0.729
-        self.n_iterations = 300
-        self.n_samples = 15
+        self.n_iterations = 1200
+        self.n_samples = 5
         self.archive_size = 200
         self.n_particles = n_particles
         self.scaling_factor = scaling_factor
-        self.categories = [list(range(200)), list(range(200))]
+        self.categories = [list(range(20)) for _ in range(30)]
         self.positions_categorical = [[[0 for _ in var] for var in self.categories] for _ in range(self.n_particles)]
         self.velocities_categorical = [[[0 for _ in var] for var in self.categories] for _ in range(self.n_particles)]
         self.local_best_fitness = [999999.9 for _ in range(self.n_particles)]
@@ -287,84 +289,85 @@ class PSOCategorical:
         start = time()
         self.initialise_categorical_positions()
         self.initialise_categorical_velocities()
-        weights_all = dynamic_weights(self.n_iterations, self.n_iterations / 4)  # Number is how many sine cycles the weights will follow.
-        for iteration in range(self.n_iterations):
-            improvement_counter = 0.0
-            consolidation_counter = 0.0
-            improvement_counter5 = 0.0
-            consolidation_counter5 = 0.0
-            improvement_counter10 = 0.0
-            consolidation_counter10 = 0.0
-            print iteration
-            archive_old = deepcopy(self.archive)
-            # print(len(self.archive))
-            # if iteration % 500 == 0 and iteration > 1:
-            #     if sum([sqrt((item1[0][0] - item2[0][0]) ** 2.0 + (item1[0][1] - item2[0][1]) ** 2.0) for item1, item2 in zip(self.archive, history)]) <= 0.001:
-            #         print("early exit", iteration)
-            #         break
-            # if iteration % 500 == 0:
-            #     history = deepcopy(self.archive)
-            weights = [weights_all[i][iteration] for i in range(self.n_functions)]
-            self.calculate_new_velocities()
-            self.update_position()
-            # weight1 = copysign(1.0, sin(10.0 * 2.0 * pi * iteration / self.n_iterations))
-            # if weight1 < 1:
-            #     weight1 = 0.0
-            # weight1 = abs(sin(3.0 * 2.0 * pi * iteration / self.n_iterations))
-            # weight2 = 1.0 - weight1
-            # weights = [weight1, weight2]
-            # if iteration % 25 == 0:
-            #     weights = generate_weights(self.n_functions)
-            self.samples = [self.representative_sample(position) for position in self.positions_categorical]
-            # self.fitness = [fitness_function(sample, [self.function1, self.function2]) for sample in self.samples]
-            self.fitness = Parallel(n_jobs=-1)(delayed(fitness_function)(sample, [self.function1, self.function2]) for sample in self.samples)
-            self.fitness_and_samples = list(zip(self.fitness, self.samples))
-            self.old_swarm = deepcopy(self.fitness_and_samples)
-            for particle in range(self.n_particles):
-                self.obj_function[particle] = sum([weights[i] * self.fitness[particle][i] for i in range(self.n_functions)])
+        # weights_all = dynamic_weights(self.n_iterations, self.n_iterations/4)#self.n_iterations/4)  # Number is how many sine cycles the weights will follow.
+        with Parallel(n_jobs=-1) as parallel:
+            for iteration in range(self.n_iterations):
+                improvement_counter = 0.0
+                consolidation_counter = 0.0
+                improvement_counter5 = 0.0
+                consolidation_counter5 = 0.0
+                improvement_counter10 = 0.0
+                consolidation_counter10 = 0.0
+                print iteration
+                archive_old = deepcopy(self.archive)
+                # print(len(self.archive))
+                # if iteration % 500 == 0 and iteration > 1:
+                #     if sum([sqrt((item1[0][0] - item2[0][0]) ** 2.0 + (item1[0][1] - item2[0][1]) ** 2.0) for item1, item2 in zip(self.archive, history)]) <= 0.001:
+                #         print("early exit", iteration)
+                #         break
+                # if iteration % 500 == 0:
+                #     history = deepcopy(self.archive)
+                # weights = [weights_all[i][iteration] for i in range(self.n_functions)]
+                self.calculate_new_velocities()
+                self.update_position()
+                # weight1 = copysign(1.0, sin(10.0 * 2.0 * pi * iteration / self.n_iterations))
+                # if weight1 < 1:
+                #     weight1 = 0.0
+                weight1 = abs(sin(3.0 * 2.0 * pi * iteration / self.n_iterations))
+                weight2 = 1.0 - weight1
+                weights = [weight1, weight2]
+                # if iteration % 25 == 0:
+                #     weights = generate_weights(self.n_functions)
+                self.samples = [self.representative_sample(position) for position in self.positions_categorical]
+                # self.fitness = [fitness_function(sample, [self.function1, self.function2]) for sample in self.samples]
+                self.fitness = parallel(delayed(fitness_function)(sample, [self.function1, self.function2]) for sample in self.samples)
+                self.fitness_and_samples = list(zip(self.fitness, self.samples))
+                self.old_swarm = deepcopy(self.fitness_and_samples)
+                for particle in range(self.n_particles):
+                    self.obj_function[particle] = sum([weights[i] * self.fitness[particle][i] for i in range(self.n_functions)])
 
-            self.update_archive(self.fitness_and_samples)
-            for particle in range(self.n_particles):
-                if self.obj_function[particle] < self.local_best_fitness[particle]:
-                    self.update_local_best(particle, self.positions_categorical[particle], self.samples[particle])
-                    self.local_best_fitness[particle] = self.obj_function[particle]
-                if self.obj_function[particle] < self.global_best_fitness:
-                    self.update_global_best(self.positions_categorical[particle], self.samples[particle])
+                self.update_archive(self.fitness_and_samples)
+                for particle in range(self.n_particles):
+                    if self.obj_function[particle] < self.local_best_fitness[particle]:
+                        self.update_local_best(particle, self.positions_categorical[particle], self.samples[particle])
+                        self.local_best_fitness[particle] = self.obj_function[particle]
+                    if self.obj_function[particle] < self.global_best_fitness:
+                        self.update_global_best(self.positions_categorical[particle], self.samples[particle])
 
-            for old_particle in archive_old:
-                if old_particle in self.archive:
-                    consolidation_counter += 1.0
-            consolidation_counter /= float(len(self.archive))
-            improvement_counter = dominated_oldarchive(self.archive, archive_old) / float(len(self.archive))
-            with open("zdt3_1.dat", "a") as term:
-                term.write("{} {}\n".format(consolidation_counter, improvement_counter))
-            if iteration % 5 == 0:
                 for old_particle in archive_old:
                     if old_particle in self.archive:
-                        consolidation_counter5 += 1.0
-                consolidation_counter5 /= float(len(self.archive))
-                improvement_counter5 = dominated_oldarchive(self.archive, archive_old) / float(len(self.archive))
-                with open("zdt3_5.dat", "a") as term:
-                    term.write("{} {}\n".format(consolidation_counter5, improvement_counter5))
-            if iteration % 10 == 0:
-                for old_particle in archive_old:
-                    if old_particle in self.archive:
-                        consolidation_counter10 += 1.0
-                consolidation_counter10 /= float(len(self.archive))
-                improvement_counter10 = dominated_oldarchive(self.archive, archive_old) / float(len(self.archive))
-                with open("zdt3_10.dat", "a") as term:
-                    term.write("{} {}\n".format(consolidation_counter10, improvement_counter10))
+                        consolidation_counter += 1.0
+                consolidation_counter /= float(len(self.archive))
+                improvement_counter = dominated_oldarchive(self.archive, archive_old) / float(len(self.archive))
+                with open("zdt12_1.dat", "a") as term:
+                    term.write("{} {}\n".format(consolidation_counter, improvement_counter))
+                if iteration % 5 == 0:
+                    for old_particle in archive_old:
+                        if old_particle in self.archive:
+                            consolidation_counter5 += 1.0
+                    consolidation_counter5 /= float(len(self.archive))
+                    improvement_counter5 = dominated_oldarchive(self.archive, archive_old) / float(len(self.archive))
+                    with open("zdt12_5.dat", "a") as term:
+                        term.write("{} {}\n".format(consolidation_counter5, improvement_counter5))
+                if iteration % 10 == 0:
+                    for old_particle in archive_old:
+                        if old_particle in self.archive:
+                            consolidation_counter10 += 1.0
+                    consolidation_counter10 /= float(len(self.archive))
+                    improvement_counter10 = dominated_oldarchive(self.archive, archive_old) / float(len(self.archive))
+                    with open("zdt12_10.dat", "a") as term:
+                        term.write("{} {}\n".format(consolidation_counter10, improvement_counter10))
 
-            plt.cla()
-            ax.scatter([item[0][0] for item in self.archive], [item[0][1] for item in self.archive])
-            plt.pause(0.01)
+                plt.cla()
+                ax.scatter([item[0][0] for item in self.archive], [item[0][1] for item in self.archive])
+                plt.pause(0.01)
 
-            with open("zdt3_mopsoc.dat", "a") as out:
-                for item in self.archive:
-                    for fun in range(self.n_functions):
-                        out.write("{} ".format(item[0][fun]))
-                    out.write("{}\n".format(item[1]))
-                out.write("\n\n")
+                with open("zdt1_mopsoc2.dat", "a") as out:
+                    for item in self.archive:
+                        for fun in range(self.n_functions):
+                            out.write("{} ".format(item[0][fun]))
+                        out.write("{}\n".format(item[1]))
+                    out.write("\n\n")
         print(time() - start, "seconds")
         # while True:
             # plt.pause(0.05)
@@ -373,5 +376,5 @@ class PSOCategorical:
 
 
 if __name__ == '__main__':
-    opt = PSOCategorical(20, 0.5, f1, f2)
+    opt = PSOCategorical(20, 0.1, f1, f2)
     opt.run()

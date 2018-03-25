@@ -1,7 +1,7 @@
-from random import choice
+from random import choice, random
 import numpy as np
 from math import sin, sqrt, exp, cos, pi
-categories = [list(range(200)), list(range(200)), list(range(200)), list(range(200)), list(range(200)), list(range(200))]
+categories = [list(range(20)) for _ in range(30)]
 
 
 def functi1(x): # Fonseca Fleming
@@ -88,19 +88,19 @@ def f2_poloni(x):
 
 
 # ZDT1
-g_zdt1 = lambda x: 1.0 + 9.0 / 29.0 * sum(x[2:])
+g_zdt1 = lambda x: 1.0 + 9.0 / 29.0 * sum(x[1:])
 h_zdt1 = lambda x: 1.0 - sqrt(f1_zdt1(x) / g_zdt1(x))
 h_zdt2 = lambda x: 1.0 - (f1_zdt1(x) / g_zdt1(x)) ** 2.0
 h_zdt3 = lambda x: 1.0 - sqrt(f1_zdt1(x) / g_zdt1(x)) - (f1_zdt1(x) / g_zdt1(x)) * sin(10.0 * pi * f1_zdt1(x))
 
 def f1_zdt1(x):  # ZDT1
-    a = [0.005 * i for i in x]
-    return a[0]
+    # a = [0.0005 * i for i in x]
+    return x[0] * 0.05
 
 
 def f2_zdt1(x):  # ZDT1
-    a = [0.005 * i for i in x]
-    return g_zdt1(x) * h_zdt3(x)
+    a = [0.05 * i for i in x]
+    return g_zdt1(a) * h_zdt1(a)
 
 
 def f1_osyczka(x):
@@ -124,7 +124,11 @@ def f2_osyczka(x):
     a[3] = 0.03 * x[3]
     return sum([i ** 2.0 for i in a])
 
-with open("osyczka_all_values.dat", "w") as output:
-    for _ in range(100000):
+with open("zdt1_30_all_values2.dat", "w") as output:
+    for _ in range(10000000):
         x = [choice(categories[i]) for i in range(len(categories))]
-        output.write("{} {}\n".format(f1_osyczka(x), f2_osyczka(x)))#, functi7(x)))
+        # x = [random() for _ in range(30)]
+        # x0 = [random(), random()] + [0 for _ in range(28)]
+        output.write("{} {}\n".format(f1_zdt1(x), f2_zdt1(x)))#, functi7(x)))
+
+        # output.write("{} {}\n".format(f1_zdt1(x0), f2_zdt1(x0)))#, functi7(x)))

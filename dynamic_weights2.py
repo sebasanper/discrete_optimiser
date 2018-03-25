@@ -15,7 +15,7 @@ def dynamic_weights(T, often):
         if i < int((T / 2) / (often * 2)):
             first = linear_function([num, 0.0], [num + (T / 2.) / (often * 2.0), linear_function([0.0, 0.0], [float(T) / 2.0, 1.0], num + T / 2. / (often * 2.0))], t)
             i += 1
-            print [0.0, 0.0], [T / 2.0, 1.0], num
+            # print [0.0, 0.0], [T / 2.0, 1.0], num
             weights[0].append(first)
         else:
             first = linear_function([num + (T / 2.) / (often * 2.0), linear_function([0.0, 0.0], [T / 2.0, 1.0], num + (T / 2.) / (often * 2.0))], [num + (T / 2) / often, 0.0], t)
@@ -48,7 +48,7 @@ def dynamic_weights(T, often):
 if __name__ == '__main__':
     T = 120
     n_w = 2  # Needs to be such that T / 2 / n_w / 2 is an integer. T / (n_w * 4).
-    ans = dynamic_weights(T, n_w)
+    ans = dynamic_weights(T, 2)
     with open("dyn_weights_good.dat", "w") as outf:
         for i in range(len(ans[0])):
             outf.write("{} {} {}\n".format(ans[0][i], ans[1][i], ans[2][i]))
