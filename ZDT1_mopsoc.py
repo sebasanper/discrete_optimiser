@@ -13,20 +13,20 @@ from dynamic_weights2 import dynamic_weights
 style.use('ggplot')
 
 def g(x):
-    return 1.0 + 9.0 / 2.0 * sum(x[1:])
+    return 1.0 + (9.0 / 2.0) * sum(x[1:])
 
-h = lambda x: 1.0 - sqrt(f1(x) / g(x))
-h2 = lambda x: 1.0 - (f1(x) / g(x)) ** 2.0
+h = lambda x: 1.0 - sqrt(x[0] / g(x))
+h2 = lambda x: 1.0 - (x[0] / g(x)) ** 2.0
 
 def h3(x):
-    return 1.0 - sqrt(f1(x) / g(x)) - (f1(x) / g(x)) * sin(10.0 * pi * f1(x))
+    return 1.0 - sqrt(x[0] / g(x)) - (x[0] / g(x)) * sin(10.0 * pi * x[0])
 
 def f1(x):
     return x[0] * 0.005
 
 def f2(x):
     a = [0.005 * i for i in x]
-    return g(a) * h(a)
+    return g(a) * h3(a)
 
 
 def mode_custom(x):
@@ -166,11 +166,11 @@ class PSOCategorical:
         self.weight_global = 1.49618
         self.inertia_weight = 0.729
         self.n_iterations = 1200
-        self.n_samples = 5
+        self.n_samples = 1
         self.archive_size = 200
         self.n_particles = n_particles
         self.scaling_factor = scaling_factor
-        self.categories = [list(range(200)) for _ in range(30)]
+        self.categories = [list(range(200)) for _ in range(3)]
         self.positions_categorical = [[[0 for _ in var] for var in self.categories] for _ in range(self.n_particles)]
         self.velocities_categorical = [[[0 for _ in var] for var in self.categories] for _ in range(self.n_particles)]
         self.local_best_fitness = [999999.9 for _ in range(self.n_particles)]
@@ -313,7 +313,7 @@ class PSOCategorical:
                 # weight1 = copysign(1.0, sin(10.0 * 2.0 * pi * iteration / self.n_iterations))
                 # if weight1 < 1:
                 #     weight1 = 0.0
-                weight1 = abs(sin(3.0 * 2.0 * pi * iteration / self.n_iterations))
+                weight1 = 0.5 + 0.5 * sin(10.0 * 2.0 * pi * iteration / self.n_iterations)
                 weight2 = 1.0 - weight1
                 weights = [weight1, weight2]
                 # if iteration % 25 == 0:
@@ -334,47 +334,47 @@ class PSOCategorical:
                     if self.obj_function[particle] < self.global_best_fitness:
                         self.update_global_best(self.positions_categorical[particle], self.samples[particle])
 
-                for old_particle in archive_old:
-                    if old_particle in self.archive:
-                        consolidation_counter += 1.0
-                consolidation_counter /= float(len(self.archive))
-                improvement_counter = dominated_oldarchive(self.archive, archive_old) / float(len(self.archive))
-                with open("zdt12_1.dat", "a") as term:
-                    term.write("{} {}\n".format(consolidation_counter, improvement_counter))
-                if iteration % 5 == 0:
-                    for old_particle in archive_old:
-                        if old_particle in self.archive:
-                            consolidation_counter5 += 1.0
-                    consolidation_counter5 /= float(len(self.archive))
-                    improvement_counter5 = dominated_oldarchive(self.archive, archive_old) / float(len(self.archive))
-                    with open("zdt12_5.dat", "a") as term:
-                        term.write("{} {}\n".format(consolidation_counter5, improvement_counter5))
-                if iteration % 10 == 0:
-                    for old_particle in archive_old:
-                        if old_particle in self.archive:
-                            consolidation_counter10 += 1.0
-                    consolidation_counter10 /= float(len(self.archive))
-                    improvement_counter10 = dominated_oldarchive(self.archive, archive_old) / float(len(self.archive))
-                    with open("zdt12_10.dat", "a") as term:
-                        term.write("{} {}\n".format(consolidation_counter10, improvement_counter10))
+                # for old_particle in archive_old:
+                #     if old_particle in self.archive:
+                #         consolidation_counter += 1.0
+                # consolidation_counter /= float(len(self.archive))
+                # improvement_counter = dominated_oldarchive(self.archive, archive_old) / float(len(self.archive))
+                # with open("zdt12_1.dat", "a") as term:
+                #     term.write("{} {}\n".format(consolidation_counter, improvement_counter))
+                # if iteration % 5 == 0:
+                #     for old_particle in archive_old:
+                #         if old_particle in self.archive:
+                #             consolidation_counter5 += 1.0
+                #     consolidation_counter5 /= float(len(self.archive))
+                #     improvement_counter5 = dominated_oldarchive(self.archive, archive_old) / float(len(self.archive))
+                #     with open("zdt12_5.dat", "a") as term:
+                #         term.write("{} {}\n".format(consolidation_counter5, improvement_counter5))
+                # if iteration % 10 == 0:
+                #     for old_particle in archive_old:
+                #         if old_particle in self.archive:
+                #             consolidation_counter10 += 1.0
+                #     consolidation_counter10 /= float(len(self.archive))
+                #     improvement_counter10 = dominated_oldarchive(self.archive, archive_old) / float(len(self.archive))
+                #     with open("zdt12_10.dat", "a") as term:
+                #         term.write("{} {}\n".format(consolidation_counter10, improvement_counter10))
 
                 plt.cla()
                 ax.scatter([item[0][0] for item in self.archive], [item[0][1] for item in self.archive])
                 plt.pause(0.01)
 
-                with open("zdt1_mopsoc3.dat", "a") as out:
+                with open("zdt3_mopsoc2.dat", "a") as out:
                     for item in self.archive:
                         for fun in range(self.n_functions):
                             out.write("{} ".format(item[0][fun]))
                         out.write("{}\n".format(item[1]))
-                    out.write("\n\n")
+                    out.write("\n")
         print(time() - start, "seconds")
-        # while True:
-            # plt.pause(0.05)
+        while True:
+            plt.pause(0.05)
 
 #  TODO multi-objectives > 2
 
 
 if __name__ == '__main__':
-    opt = PSOCategorical(20, 0.99, f1, f2)
+    opt = PSOCategorical(20, 0.5, f1, f2)
     opt.run()
