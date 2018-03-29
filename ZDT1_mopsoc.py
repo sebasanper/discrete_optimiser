@@ -13,7 +13,7 @@ from dynamic_weights2 import dynamic_weights
 style.use('ggplot')
 
 def g(x):
-    return 1.0 + (9.0 / 2.0) * sum(x[1:])
+    return 1.0 + (9.0 / 6.0) * sum(x[1:])
 
 h = lambda x: 1.0 - sqrt(x[0] / g(x))
 h2 = lambda x: 1.0 - (x[0] / g(x)) ** 2.0
@@ -22,10 +22,10 @@ def h3(x):
     return 1.0 - sqrt(x[0] / g(x)) - (x[0] / g(x)) * sin(10.0 * pi * x[0])
 
 def f1(x):
-    return x[0] * 0.005
+    return x[0] * 0.002
 
 def f2(x):
-    a = [0.005 * i for i in x]
+    a = [0.002 * i for i in x]
     return g(a) * h3(a)
 
 
@@ -165,12 +165,12 @@ class PSOCategorical:
         self.weight_local = 1.49618
         self.weight_global = 1.49618
         self.inertia_weight = 0.729
-        self.n_iterations = 1200
-        self.n_samples = 1
+        self.n_iterations = 480
+        self.n_samples = 5
         self.archive_size = 200
         self.n_particles = n_particles
         self.scaling_factor = scaling_factor
-        self.categories = [list(range(200)) for _ in range(3)]
+        self.categories = [list(range(500)) for _ in range(7)]
         self.positions_categorical = [[[0 for _ in var] for var in self.categories] for _ in range(self.n_particles)]
         self.velocities_categorical = [[[0 for _ in var] for var in self.categories] for _ in range(self.n_particles)]
         self.local_best_fitness = [999999.9 for _ in range(self.n_particles)]
@@ -313,7 +313,7 @@ class PSOCategorical:
                 # weight1 = copysign(1.0, sin(10.0 * 2.0 * pi * iteration / self.n_iterations))
                 # if weight1 < 1:
                 #     weight1 = 0.0
-                weight1 = 0.5 + 0.5 * sin(10.0 * 2.0 * pi * iteration / self.n_iterations)
+                weight1 = 0.5 + 0.5 * sin(6.0 * 2.0 * pi * iteration / self.n_iterations)
                 weight2 = 1.0 - weight1
                 weights = [weight1, weight2]
                 # if iteration % 25 == 0:
@@ -362,7 +362,7 @@ class PSOCategorical:
                 ax.scatter([item[0][0] for item in self.archive], [item[0][1] for item in self.archive])
                 plt.pause(0.01)
 
-                with open("zdt3_mopsoc2.dat", "a") as out:
+                with open("zdt3_mopsoc3.dat", "a") as out:
                     for item in self.archive:
                         for fun in range(self.n_functions):
                             out.write("{} ".format(item[0][fun]))
@@ -376,5 +376,5 @@ class PSOCategorical:
 
 
 if __name__ == '__main__':
-    opt = PSOCategorical(20, 0.5, f1, f2)
+    opt = PSOCategorical(20, 0.9999, f1, f2)
     opt.run()

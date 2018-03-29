@@ -14,12 +14,14 @@ style.use('ggplot')
 
 
 def f1(x):
-    a = [0.025 * x[0], 0.015 * x[1]]
+    a = [- 15.0 + 0.225 * i for i in x]
+    # a = [0.025 * x[0], 0.015 * x[1]]
     return 4.0 * a[0] ** 2.0 + 4.0 * a[1] ** 2.0
 
 
 def f2(x):
-    a = [0.025 * x[0], 0.015 * x[1]]
+    a = [- 15.0 + 0.225 * i for i in x]
+    # a = [0.025 * x[0], 0.015 * x[1]]
     return (a[0] - 5.0) ** 2.0 + (a[1] - 5.0) ** 2.0
 
 
@@ -170,7 +172,7 @@ class PSOCategorical:
         self.weight_global = 1.49618
         self.inertia_weight = 0.729
         self.n_iterations = 150
-        self.n_samples = 15
+        self.n_samples = 1
         self.archive_size = 200
         self.n_particles = n_particles
         self.scaling_factor = scaling_factor
@@ -327,13 +329,13 @@ class PSOCategorical:
             self.fitness_and_samples = list(zip(self.fitness, self.samples))
             for item in self.fitness_and_samples:
                 g1v = g1(item[1])
-                if g1v < 0.0:
-                    item[0][0] += 999.9
-                    item[0][1] += 999.9
+                if g1v <= 0.0:
+                    item[0][0] += 9999999.9
+                    item[0][1] += 9999999.9
                 g2v = g2(item[1])
-                if g2v < 0.0:
-                    item[0][0] += 999.9
-                    item[0][1] += 999.9
+                if g2v <= 0.0:
+                    item[0][0] += 9999999.9
+                    item[0][1] += 9999999.9
             self.old_swarm = deepcopy(self.fitness_and_samples)
             for particle in range(self.n_particles):
                 self.obj_function[particle] = sum([weights[i] * self.fitness[particle][i] for i in range(self.n_functions)])
@@ -374,12 +376,12 @@ class PSOCategorical:
             ax.scatter([item[0][0] for item in self.archive], [item[0][1] for item in self.archive])
             plt.pause(0.01)
 
-            with open("bihn2_mopsoc.dat", "a") as out:
+            with open("bihn3_mopsoc.dat", "a") as out:
                 for item in self.archive:
                     for fun in range(self.n_functions):
                         out.write("{} ".format(item[0][fun]))
                     out.write("{}\n".format(item[1]))
-                out.write("\n\n")
+                out.write("\n")
         print(time() - start, "seconds")
         # while True:
             # plt.pause(0.05)

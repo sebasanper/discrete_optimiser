@@ -53,12 +53,12 @@ def functi7(x): # Viennet
 
 
 def f1(x): # Bihn Korn
-    a = [0.025 * x[0], 0.015 * x[1]]
+    a = [- 15.0 + 0.225 * i for i in x]
     return 4.0 * a[0] ** 2.0 + 4.0 * a[1] ** 2.0
 
 
 def f2(x): # Bihn Korn
-    a = [0.025 * x[0], 0.015 * x[1]]
+    a = [- 15.0 + 0.225 * i for i in x]
     return (a[0] - 5.0) ** 2.0 + (a[1] - 5.0) ** 2.0
 
 
@@ -88,19 +88,19 @@ def f2_poloni(x):
 
 
 # ZDT1
-g_zdt = lambda x: 1.0 + (9.0 / 9.0) * sum(x[1:])
+g_zdt = lambda x: 1.0 + (9.0 / 6.0) * sum(x[1:])
 h_zdt1 = lambda x: 1.0 - sqrt(x[0] / g_zdt(x))
 h_zdt2 = lambda x: 1.0 - (x[0] / g_zdt(x)) ** 2.0
 h_zdt3 = lambda x: 1.0 - sqrt(x[0] / g_zdt(x)) - (x[0] / g_zdt(x)) * sin(10.0 * pi * x[0])
 
 def f1_zdt(x):  # ZDT1
     # a = [0.0005 * i for i in x]
-    return x[0] * 0.2
+    return x[0] * 0.005
 
 
 def f2_zdt1(x):  # ZDT1
-    a = [0.2 * i for i in x]
-    return g_zdt(a) * h_zdt1(a)
+    a = [0.005 * i for i in x]
+    return g_zdt(a) * h_zdt3(a)
 
 
 def f1_osyczka(x):
@@ -141,11 +141,11 @@ def fonseca2(x):
     return 1.0 - exp(- suma)
 
 
-with open("poloni_all_values.dat", "w") as output:
+with open("bihn_all_values2.dat", "w") as output:
     for _ in range(100000):
         x = [choice(categories[i]) for i in range(len(categories))]
         # x = [random() for _ in range(30)]
         # x0 = [random()] + [0.0 for _ in range(29)]
-        output.write("{} {} {} {}\n".format(f1_poloni(x), f2_poloni(x), - pi + pi / 100.0 * x[0], - pi + pi / 100.0 * x[1]))#, functi7(x)))
+        output.write("{} {} {} {}\n".format(f1(x), f2(x), - 15.0 + 0.225 * x[0], - 15.0 + 0.225 * x[1]))#, functi7(x)))
         # print h_zdt1(x0)
         # output.write("{} {}\n".format(x0[0], g_zdt1(x0) * h_zdt1(x0)))#, functi7(x)))
