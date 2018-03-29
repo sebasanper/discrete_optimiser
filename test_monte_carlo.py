@@ -1,7 +1,7 @@
 from random import choice, random
 import numpy as np
 from math import sin, sqrt, exp, cos, pi
-categories = [list(range(5)) for _ in range(10)]
+categories = [list(range(200)) for _ in range(2)]
 
 
 def functi1(x): # Fonseca Fleming
@@ -84,7 +84,7 @@ def f1_poloni(x):
 
 def f2_poloni(x):
     a = [- pi + pi / 100.0 * i for i in x]
-    return (a[0] + 2.0) ** 2.0 + (a[1] + 1.0) ** 2.0
+    return (a[0] + 3.0) ** 2.0 + (a[1] + 1.0) ** 2.0
 
 
 # ZDT1
@@ -124,11 +124,28 @@ def f2_osyczka(x):
     a[3] = 0.03 * x[3]
     return sum([i ** 2.0 for i in a])
 
-with open("zdt1_10_all_values2.dat", "w") as output:
-    for _ in range(1000000):
+
+def fonseca1(x):
+    a = [- 4.0 + 0.04 * i for i in x]
+    suma = 0.0
+    for i in range(len(a)):
+        suma += (a[i] - 1.0 / sqrt(len(a))) ** 2.0
+    return 1.0 - exp(- suma)
+
+
+def fonseca2(x):
+    a = [- 4.0 + 0.04 * i for i in x]
+    suma = 0.0
+    for i in range(len(a)):
+        suma += (a[i] + 1.0 / sqrt(len(a))) ** 2.0
+    return 1.0 - exp(- suma)
+
+
+with open("poloni_all_values.dat", "w") as output:
+    for _ in range(100000):
         x = [choice(categories[i]) for i in range(len(categories))]
         # x = [random() for _ in range(30)]
         # x0 = [random()] + [0.0 for _ in range(29)]
-        output.write("{} {}\n".format(f1_zdt(x), f2_zdt1(x)))#, functi7(x)))
+        output.write("{} {} {} {}\n".format(f1_poloni(x), f2_poloni(x), - pi + pi / 100.0 * x[0], - pi + pi / 100.0 * x[1]))#, functi7(x)))
         # print h_zdt1(x0)
         # output.write("{} {}\n".format(x0[0], g_zdt1(x0) * h_zdt1(x0)))#, functi7(x)))

@@ -24,7 +24,7 @@ def f1(x):
 
 def f2(x):
     a = [- pi + pi / 100.0 * i for i in x]
-    return (a[0] + 2.0) ** 2.0 + (a[1] + 1.0) ** 2.0
+    return (a[0] + 3.0) ** 2.0 + (a[1] + 1.0) ** 2.0
 
 
 def mode_custom(x):
@@ -164,7 +164,7 @@ class PSOCategorical:
         self.weight_global = 1.49618
         self.inertia_weight = 0.729
         self.n_iterations = 300
-        self.n_samples = 15
+        self.n_samples = 1
         self.archive_size = 200
         self.n_particles = n_particles
         self.scaling_factor = scaling_factor
@@ -331,29 +331,29 @@ class PSOCategorical:
                 if self.obj_function[particle] < self.global_best_fitness:
                     self.update_global_best(self.positions_categorical[particle], self.samples[particle])
 
-            for old_particle in archive_old:
-                if old_particle in self.archive:
-                    consolidation_counter += 1.0
-            consolidation_counter /= float(len(self.archive))
-            improvement_counter = dominated_oldarchive(self.archive, archive_old) / float(len(self.archive))
-            with open("poloni_1.dat", "a") as term:
-                term.write("{} {}\n".format(consolidation_counter, improvement_counter))
-            if iteration % 5 == 0:
-                for old_particle in archive_old:
-                    if old_particle in self.archive:
-                        consolidation_counter5 += 1.0
-                consolidation_counter5 /= float(len(self.archive))
-                improvement_counter5 = dominated_oldarchive(self.archive, archive_old) / float(len(self.archive))
-                with open("poloni_5.dat", "a") as term:
-                    term.write("{} {}\n".format(consolidation_counter5, improvement_counter5))
-            if iteration % 10 == 0:
-                for old_particle in archive_old:
-                    if old_particle in self.archive:
-                        consolidation_counter10 += 1.0
-                consolidation_counter10 /= float(len(self.archive))
-                improvement_counter10 = dominated_oldarchive(self.archive, archive_old) / float(len(self.archive))
-                with open("poloni_10.dat", "a") as term:
-                    term.write("{} {}\n".format(consolidation_counter10, improvement_counter10))
+            # for old_particle in archive_old:
+            #     if old_particle in self.archive:
+            #         consolidation_counter += 1.0
+            # consolidation_counter /= float(len(self.archive))
+            # improvement_counter = dominated_oldarchive(self.archive, archive_old) / float(len(self.archive))
+            # with open("poloni_1.dat", "a") as term:
+            #     term.write("{} {}\n".format(consolidation_counter, improvement_counter))
+            # if iteration % 5 == 0:
+            #     for old_particle in archive_old:
+            #         if old_particle in self.archive:
+            #             consolidation_counter5 += 1.0
+            #     consolidation_counter5 /= float(len(self.archive))
+            #     improvement_counter5 = dominated_oldarchive(self.archive, archive_old) / float(len(self.archive))
+            #     with open("poloni_5.dat", "a") as term:
+            #         term.write("{} {}\n".format(consolidation_counter5, improvement_counter5))
+            # if iteration % 10 == 0:
+            #     for old_particle in archive_old:
+            #         if old_particle in self.archive:
+            #             consolidation_counter10 += 1.0
+            #     consolidation_counter10 /= float(len(self.archive))
+            #     improvement_counter10 = dominated_oldarchive(self.archive, archive_old) / float(len(self.archive))
+            #     with open("poloni_10.dat", "a") as term:
+            #         term.write("{} {}\n".format(consolidation_counter10, improvement_counter10))
 
             plt.cla()
             ax.scatter([item[0][0] for item in self.archive], [item[0][1] for item in self.archive])
@@ -364,7 +364,7 @@ class PSOCategorical:
                     for fun in range(self.n_functions):
                         out.write("{} ".format(item[0][fun]))
                     out.write("{}\n".format(item[1]))
-                out.write("\n\n")
+                out.write("\n")
         print(time() - start, "seconds")
         # while True:
             # plt.pause(0.05)

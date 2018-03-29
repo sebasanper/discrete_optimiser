@@ -643,7 +643,7 @@ def cli(args):
 if __name__ == "__main__":
     data = []
     name = []
-    with open("zdt1_30_all_values.dat", "r") as inp:
+    with open("poloni_all_values.dat", "r") as inp:
         for line in inp:
             cols = line.split()
             # name.append(cols[0])
@@ -663,7 +663,7 @@ if __name__ == "__main__":
 
     pareto_front = eps_sort(data)
     # print pareto_front[0]
-    with open("zdt1_30_pareto.dat", "w") as out:
+    with open("poloni_pareto.dat", "w") as out:
         for i in range(len(pareto_front)):
             # print pareto_front[i][0], pareto_front[i][1]
             out.write("{} {}\n".format(pareto_front[i][0], pareto_front[i][1]))#, pareto_front[i][2]))
