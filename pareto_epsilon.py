@@ -643,33 +643,18 @@ def cli(args):
 if __name__ == "__main__":
     data = []
     name = []
-    with open("poloni_all_values.dat", "r") as inp:
+    # Original values separated by a space
+    with open("all_values_4D_noconst_int.dat", "r") as inp:
         for line in inp:
             cols = line.split()
-            # name.append(cols[0])
-            data.append([float(cols[0]), float(cols[1])])#, float(cols[3])])
-    # with open("../WINDOW_dev/new_mopsoc_linux.dat", "r") as inp:
-    #     for line in inp:
-    #         cols = line.split()
-    #         data.append([float(cols[0]), float(cols[1]), float(cols[2])])
-    # with open("../WINDOW_dev/mopsoc_sampling.dat", "r") as inp:
-    #     for line in inp:
-    #         cols = line.split()
-    #         data.append([abs(float(cols[8]) - 8.6200480173078038), float(cols[10]), float(cols[9])])
-    #with open("/home/sebasanper/PycharmProjects/discrete_optimiser/vien_all_values.dat", "r") as inp:
-    #    for line in inp:
-    #        cols = line.split()
-    #        data.append([float(cols[0]), float(cols[1]), float(cols[2])])
+            name.append([float(cols[4]), float(cols[5])])
+            # Modify this line to the number of criteria.
+            data.append([float(cols[0]), float(cols[1]), float(cols[2]), float(cols[3])])
 
+    # Run Pareto sorting algorithm
     pareto_front = eps_sort(data)
-    # print pareto_front[0]
-    with open("poloni_pareto.dat", "w") as out:
+    # Write pareto front to file
+    with open("pareto_front_4D_noconst_int.dat", "w") as out:
         for i in range(len(pareto_front)):
-            # print pareto_front[i][0], pareto_front[i][1]
-            out.write("{} {}\n".format(pareto_front[i][0], pareto_front[i][1]))#, pareto_front[i][2]))
-    # with open("zdt1_30_pareto.dat", "w") as out:
-    #         for i in range(len(pareto_front)):
-    #             for j in range(len(name)):
-    #                 if pareto_front[i][0] == data[j][0]:
-    #                     wkf = name[j]
-    #             out.write("{} {} {} {}\n".format(wkf, pareto_front[i][0], pareto_front[i][1], pareto_front[i][2]))
+            # Modify this line to the number of criteria.
+            out.write("{} {} {} {} {} {}\n".format(pareto_front[i][0], pareto_front[i][1], pareto_front[i][2], pareto_front[i][3], name[i][0], name[i][1]))

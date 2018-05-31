@@ -290,6 +290,7 @@ class PSOCategorical:
         self.initialise_categorical_positions()
         self.initialise_categorical_velocities()
         # weights_all = dynamic_weights(self.n_iterations, self.n_iterations/4)#self.n_iterations/4)  # Number is how many sine cycles the weights will follow.
+        weight1 = 0.2027
         with Parallel(n_jobs=-1) as parallel:
             for iteration in range(self.n_iterations):
                 improvement_counter = 0.0
@@ -313,9 +314,12 @@ class PSOCategorical:
                 # weight1 = copysign(1.0, sin(10.0 * 2.0 * pi * iteration / self.n_iterations))
                 # if weight1 < 1:
                 #     weight1 = 0.0
-                weight1 = 0.5 + 0.5 * sin(6.0 * 2.0 * pi * iteration / self.n_iterations)
+                weight1 = 4.0 * weight1 * (1.0 - weight1)
                 weight2 = 1.0 - weight1
                 weights = [weight1, weight2]
+                # weight1 = 0.5 + 0.5 * sin(6.0 * 2.0 * pi * iteration / self.n_iterations)
+                # weight2 = 1.0 - weight1
+                # weights = [weight1, weight2]
                 # if iteration % 25 == 0:
                 #     weights = generate_weights(self.n_functions)
                 self.samples = [self.representative_sample(position) for position in self.positions_categorical]
@@ -362,7 +366,7 @@ class PSOCategorical:
                 ax.scatter([item[0][0] for item in self.archive], [item[0][1] for item in self.archive])
                 plt.pause(0.01)
 
-                with open("zdt3_mopsoc3.dat", "a") as out:
+                with open("zdt3_mopsoc4.dat", "a") as out:
                     for item in self.archive:
                         for fun in range(self.n_functions):
                             out.write("{} ".format(item[0][fun]))
